@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>领队旅行记账本</title>
+    <title>旅行记账本</title>
     <style>
         :root {
             --primary-color: #4a90e2;
@@ -18,7 +18,6 @@
             margin: 0 auto;
             padding: 15px;
             background-color: #f5f5f5;
-            /* 关键：锁定视口，防止键盘弹起时页面跳动 */
             height: 100vh;
             overflow: auto;
         }
@@ -32,6 +31,32 @@
         h1, h2, h3 {
             color: var(--primary-color);
             font-size: 1.4em;
+            margin: 0;
+        }
+        /* 新增：用于合并显示标题和账本名称的样式 */
+        .main-title {
+            display: flex;
+            align-items: baseline; /* 让文字底部对齐 */
+            gap: 8px; /* 标题和账本名之间的间距 */
+        }
+        .ledger-name-part {
+            font-size: 1.4em; /* 与主标题保持一致 */
+            font-weight: normal; /* 避免加粗，看起来像附属 */
+            color: var(--primary-color); /* 使用与标题相同的颜色 */
+        }
+        /* 修改：全新的精简提示条样式 */
+        .hint-banner {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 6px 12px;
+            text-align: center;
+            font-size: 0.85em;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         .btn {
             display: inline-block;
@@ -59,13 +84,12 @@
             background-color: var(--success-color);
         }
         .btn-export, .btn-help, .btn-calculator {
-            background-color: #5bc0de; /* 统一为青色 */
+            background-color: #5bc0de;
         }
-        /* 修改：导出按钮变小，样式更像一个图标 */
         .btn-export {
             padding: 4px 8px;
             font-size: 12px;
-            margin-left: 8px; /* 与旁边按钮拉开距离 */
+            margin-left: 8px;
         }
         .form-group {
             margin-bottom: 12px;
@@ -83,6 +107,11 @@
             border-radius: 4px;
             box-sizing: border-box;
             font-size: 0.95em;
+        }
+        /* 修改：专门针对日期输入框的样式，限制其最大宽度以适应手机 */
+        input[type="date"] {
+            width: fit-content; /* 让它只占据内容所需宽度 */
+            max-width: 100%; /* 防止在极窄屏幕上溢出 */
         }
         .radio-list, .checkbox-list {
             display: flex;
@@ -112,12 +141,15 @@
         th, td {
             border: 1px solid var(--border-color);
             padding: 8px 6px;
-            text-align: left;
+            /* 修改：默认单元格内容居中 */
+            text-align: center;
             white-space: nowrap;
         }
         th {
             background-color: #f1f3f4;
             font-weight: bold;
+            /* 修改：确保表头也居中 */
+            text-align: center;
         }
         tr:nth-child(even) {
             background-color: #f8f9fa;
@@ -125,8 +157,12 @@
         .center-cell {
             text-align: center;
         }
+        /* 新增：右对齐和左对齐的类 */
         .right-cell {
             text-align: right;
+        }
+        .left-cell {
+            text-align: left;
         }
         .balance-item {
             padding: 6px 0;
@@ -165,17 +201,7 @@
             margin: 0 3px;
             font-size: 11px;
         }
-        /* 修改：减小提示卡片的内边距和字体大小，使其更紧凑 */
-        .hint-card {
-            background-color: #fff3cd;
-            border-color: #ffeaa7;
-            color: #856404;
-            border-radius: 4px;
-            padding: 8px 12px; /* 减小内边距 */
-            margin-bottom: 15px;
-            text-align: center;
-            font-size: 0.85em; /* 减小字体 */
-        }
+        /* 移除旧的提示卡片样式 */
         .help-text {
             font-size: 0.85em;
             color: #6c757d;
@@ -188,12 +214,15 @@
 </head>
 <body>
 
-    <h1>领队旅行记账本</h1>
+    <!-- 修改：新的标题结构 -->
+    <h1 class="main-title">
+        旅行记账本
+        <span id="ledgerNameDisplay" class="ledger-name-part">(未命名)</span>
+    </h1>
 
-    <!-- 修改：温馨提示更紧凑 -->
-    <div class="card hint-card">
-        <p><strong>💡 温馨提示</strong></p>
-        <p>请先添加成员，然后开始记账。</p>
+    <!-- 修改：新的精简提示条 -->
+    <div class="hint-banner">
+        请先添加成员，然后开始记账。
     </div>
 
     <div class="card">
@@ -212,21 +241,22 @@
         <div class="form-group">
             <label>费用大类: <span style="color: red;">*</span></label>
             <div class="radio-list" id="categoryRadios">
+                <!-- 修改：调整费用大类顺序为 餐饮、交通、门票、住宿、其他 -->
+                <div class="radio-item">
+                    <input type="radio" id="cat_food" name="expenseCategory" value="餐饮">
+                    <label for="cat_food">餐饮</label>
+                </div>
                 <div class="radio-item">
                     <input type="radio" id="cat_transport" name="expenseCategory" value="交通">
                     <label for="cat_transport">交通</label>
-                </div>
-                <div class="radio-item">
-                    <input type="radio" id="cat_accommodation" name="expenseCategory" value="住宿">
-                    <label for="cat_accommodation">住宿</label>
                 </div>
                 <div class="radio-item">
                     <input type="radio" id="cat_ticket" name="expenseCategory" value="门票">
                     <label for="cat_ticket">门票</label>
                 </div>
                 <div class="radio-item">
-                    <input type="radio" id="cat_food" name="expenseCategory" value="餐饮">
-                    <label for="cat_food">餐饮</label>
+                    <input type="radio" id="cat_accommodation" name="expenseCategory" value="住宿">
+                    <label for="cat_accommodation">住宿</label>
                 </div>
                 <div class="radio-item">
                     <input type="radio" id="cat_other" name="expenseCategory" value="其他">
@@ -256,7 +286,6 @@
     <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <h2>费用明细</h2>
-            <!-- 移除主界面上的导出按钮 -->
         </div>
         <div class="table-container">
             <div id="expensesList"></div>
@@ -283,28 +312,33 @@
             <strong>当前成员:</strong>
             <span id="participantsList"></span>
         </div>
-        <!-- 修改：帮助面板内容 -->
         <div id="helpSection" class="help-text hidden">
             <p><strong>数据管理:</strong></p>
-            <p>• <strong>导出数据:</strong> 点击下面的按钮，可将所有费用记录保存为CSV文件。</p>
-            <!-- 修改：将导出按钮移到这里 -->
+            <!-- 修改：将账本名称设置移到这里 -->
+            <p><strong>账本名称:</strong></p>
+            <div class="form-group">
+                <label for="ledgerNameInput">设置账本名称:</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="ledgerNameInput" placeholder="给您的账本起个名字...">
+                    <button class="btn" onclick="setLedgerName()">设置</button>
+                </div>
+            </div>
+            <p><strong>导出数据:</strong> 点击下面的按钮，可将所有费用记录保存为CSV文件。</p>
             <button class="btn btn-export" onclick="exportToCSV()">导出Excel</button>
-            <p>• <strong>数据重置:</strong> 如果数据出现异常，可以点击下方按钮进行重置（此操作不可逆，请谨慎使用）。</p>
+            <p><strong>数据重置:</strong> 如果数据出现异常，可以点击下方按钮进行重置（此操作不可逆，请谨慎使用）。</p>
             <button class="btn btn-danger" onclick="resetAppDataWithExport()">⚠️ 重置所有数据</button>
         </div>
     </div>
 
-    <!-- 通知 -->
     <div id="notification" class="notification"></div>
 
     <script>
-        // 应用数据
         let appData = {
+            ledgerName: "未命名", // 默认名称
             participants: [],
             expenses: []
         };
 
-        // 从 localStorage 加载数据
         function loadData() {
             const saved = localStorage.getItem('travelAccountingApp');
             if (saved) {
@@ -316,15 +350,14 @@
                 }
             }
             document.getElementById('expenseDate').valueAsDate = new Date();
+            updateLedgerNameDisplay(); // 加载数据后，更新页面上的账本名称显示
             renderAll();
         }
 
-        // 保存数据到 localStorage
         function saveData() {
             localStorage.setItem('travelAccountingApp', JSON.stringify(appData));
         }
 
-        // 显示通知
         function showNotification(message) {
             const notification = document.getElementById('notification');
             notification.textContent = message;
@@ -335,18 +368,16 @@
             }, 2000);
         }
 
-        // 切换帮助面板
         function toggleHelp() {
             const helpSection = document.getElementById('helpSection');
             helpSection.classList.toggle('hidden');
         }
 
-        // --- 核心更新：优化的带强制导出的重置功能 ---
         function resetAppDataWithExport() {
             exportToCSVForReset();
 
             setTimeout(() => {
-                if (confirm("⚠️ 您正在执行数据重置操作！\n\n由于数据已自动导出，请检查您的下载文件夹。\n\n此操作将永久删除所有本地成员和费用记录，并且无法撤销。\n\n确定要继续吗？")) {
+                if (confirm("⚠️ 您正在执行数据重置操作！\n\n由于数据已自动导出，请检查您的下载文件夹。\n\n此操作将永久删除所有本地成员、费用记录和账本名称，并且无法撤销。\n\n确定要继续吗？")) {
                     localStorage.removeItem('travelAccountingApp');
                     location.reload();
                 }
@@ -381,7 +412,26 @@
             document.body.removeChild(link);
         }
 
-        // 添加成员
+        // 修改：更新账本名称显示，使其格式为 (账本名)
+        function updateLedgerNameDisplay() {
+            const displayElement = document.getElementById('ledgerNameDisplay');
+            displayElement.textContent = `(${appData.ledgerName || "未命名"})`;
+        }
+
+        function setLedgerName() {
+            const input = document.getElementById('ledgerNameInput');
+            const newName = input.value.trim();
+            if (newName) {
+                appData.ledgerName = newName;
+                saveData();
+                updateLedgerNameDisplay(); // 更新显示
+                input.value = ''; // 清空输入框
+                showNotification("账本名称已更新");
+            } else {
+                showNotification("请输入账本名称！");
+            }
+        }
+
         function addParticipant() {
             const input = document.getElementById('newParticipant');
             const name = input.value.trim();
@@ -401,7 +451,6 @@
             renderAll();
         }
 
-        // 删除成员
         function removeParticipant(name) {
             if (appData.participants.length <= 1) {
                 showNotification("不能删除最后一个成员！");
@@ -417,7 +466,6 @@
             }
         }
 
-        // 添加费用
         function addExpense() {
             const amountInput = document.getElementById('expenseAmount');
             const payerSelect = document.getElementById('expensePayer');
@@ -486,7 +534,6 @@
             showNotification("费用已记录");
         }
 
-        // 删除费用
         function deleteExpense(id) {
             if (confirm("确定要删除这条费用记录吗？")) {
                 appData.expenses = appData.expenses.filter(e => e.id !== id);
@@ -569,9 +616,9 @@
                     <thead>
                         <tr>
                             <th>姓名</th>
-                            <th>垫付总额</th>
-                            <th>消费总额</th>
-                            <th>应结</th>
+                            <th class="right-cell">垫付总额</th>
+                            <th class="right-cell">消费总额</th>
+                            <th class="right-cell">应结</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -607,7 +654,7 @@
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
             link.setAttribute('href', url);
-            link.setAttribute('download', `旅行费用明细_${new Date().toISOString().slice(0, 10)}.csv`);
+            link.setAttribute('download', `${appData.ledgerName}_旅行费用明细_${new Date().toISOString().slice(0, 10)}.csv`);
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
@@ -615,7 +662,6 @@
             showNotification("费用明细已导出");
         }
 
-        // 渲染所有UI
         function renderParticipants() {
             const listEl = document.getElementById('participantsList');
             listEl.innerHTML = appData.participants.map(p => 
@@ -655,12 +701,12 @@
                     <thead>
                         <tr>
                             <th>日期</th>
-                            <th>金额</th>
-                            <th>人均</th>
+                            <th class="right-cell">金额</th>
+                            <th class="right-cell">人均</th>
                             <th>大类</th>
                             <th>说明</th>
                             <th>付款人</th>
-                            <th>分摊人</th>
+                            <th class="left-cell">分摊人</th>
                             <th class="center-cell">删除</th>
                         </tr>
                     </thead>
@@ -675,7 +721,7 @@
                                     <td>${expense.category}</td>
                                     <td>${expense.description}</td>
                                     <td>${expense.payer}</td>
-                                    <td>${expense.splitAmong.join(', ')}</td>
+                                    <td class="left-cell">${expense.splitAmong.join(', ')}</td>
                                     <td class="center-cell"><button class="btn btn-sm btn-danger" onclick="deleteExpense(${expense.id})">删除</button></td>
                                 </tr>
                             `;
@@ -692,7 +738,6 @@
             renderExpensesList();
         }
 
-        // 应用启动
         window.onload = function() {
             loadData();
         };
