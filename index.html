@@ -206,6 +206,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            user-select: none;
         }
         .collapsible-header::after {
             content: '▼';
@@ -213,8 +214,29 @@
             transition: transform 0.2s ease;
         }
         .collapsible-header.collapsed::after {
-            content: '▶';
-            transform: rotate(90deg);
+            transform: rotate(-90deg);
+        }
+        /* 导入文件样式 */
+        .import-container {
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        #importFile {
+            display: none;
+        }
+        .import-label {
+            padding: 8px 16px;
+            background-color: #28a745;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.95em;
+            line-height: 1.4;
+        }
+        .import-label:hover {
+            opacity: 0.9;
         }
 
         /* 模块背景色 */
@@ -226,7 +248,7 @@
 <body>
 
 <div class="hint-banner">
-    请在设置中心添加成员、账本名称后，然后开始记账。<br>本账本支持单机存储费用明细，如有需要可导出数据。<br>V20260310.15
+    请在设置中心添加成员、账本名称后，然后开始记账。<br>本账本支持单机存储明细，可导出导入数据。<br>V20260403.14
 </div>
 
 <h1 class="main-title">
@@ -315,7 +337,7 @@
 
 <!-- 设置中心 -->
 <div class="card">
-    <h2 class="collapsible-header" onclick="toggleSettingsPanel()">设置中心</h2>
+    <h2 id="settingsHeader" class="collapsible-header collapsed" onclick="toggleSettingsPanel()">设置中心</h2>
     <div id="settingsPanelContent" class="hidden">
         <div class="form-group">
             <label for="newParticipant">添加新成员:</label>
@@ -333,9 +355,14 @@
         </div>
         <hr style="margin: 15px 0;">
         <div class="form-group">
-            <label>数据导出与重置:</label><br>
-            <button class="btn btn-export" onclick="exportToCSV()">导出Excel</button>
-            <button class="btn btn-danger" onclick="resetAppDataWithExport()" style="margin-left: 8px;">⚠️ 重置所有数据</button>
+            <label>数据导入/导出与重置:</label><br>
+            <!-- 新增导入功能区域 -->
+            <div class="import-container">
+                <label for="importFile" class="import-label btn-success">📤 导入CSV文件</label>
+                <input type="file" id="importFile" accept=".csv" onchange="handleFileImport(event)">
+            </div>
+            <button class="btn btn-export" onclick="exportToCSV()" style="margin-top: 8px;">📥 导出Excel</button>
+            <button class="btn btn-danger" onclick="resetAppDataWithExport()" style="margin-left: 8px; margin-top: 8px;">⚠️ 重置所有数据</button>
         </div>
     </div>
 </div>
@@ -372,7 +399,7 @@
         const notification = document.getElementById('notification');
         notification.textContent = message;
         notification.classList.add('show');
-        setTimeout(() => notification.classList.remove('show'), 2000);
+        setTimeout(() => notification.classList.remove('show'), 3000);
     }
 
     function resetAppDataWithExport() {
@@ -542,16 +569,19 @@
             return;
         }
 
+        // 1. 计算个人总体收支
         const userStats = {};
         appData.participants.forEach(p => userStats[p] = { paid: 0, consumed: 0 });
 
         appData.expenses.forEach(expense => {
             userStats[expense.payer].paid += expense.amount;
             const share = expense.amount / expense.splitAmong.length;
-            expense.splitAmong.forEach(person => userStats[person].consumed += share);
+            expense.splitAmong.forEach(person => {
+                userStats[person].consumed += share;
+            });
         });
 
-        const rows = appData.participants.map(person => {
+        const balanceRows = appData.participants.map(person => {
             const { paid, consumed } = userStats[person];
             const net = paid - consumed;
             let status = "金额已平", cls = "";
@@ -565,10 +595,61 @@
             return `<tr><td>${person}</td><td class="right-cell">¥${paid.toFixed(2)}</td><td class="right-cell">¥${consumed.toFixed(2)}</td><td class="right-cell ${cls}">${status}</td></tr>`;
         }).join('');
 
+        // 2. 计算个人分类消费明细
+        const categories = ['餐饮', '交通', '门票', '住宿', '其他'];
+        // 初始化数据结构
+        const categoryStats = {};
+        appData.participants.forEach(p => {
+            categoryStats[p] = {};
+            categories.forEach(c => categoryStats[p][c] = 0);
+        });
+
+        // 统计
+        appData.expenses.forEach(expense => {
+            const share = expense.amount / expense.splitAmong.length;
+            expense.splitAmong.forEach(person => {
+                if (categoryStats[person]) {
+                    categoryStats[person][expense.category] += share;
+                }
+            });
+        });
+
+        // 生成分类表格行
+        const categoryRows = appData.participants.map(person => {
+            let cells = `<td>${person}</td>`;
+            let total = 0;
+            categories.forEach(cat => {
+                const amount = categoryStats[person][cat];
+                total += amount;
+                cells += `<td class="right-cell">${amount > 0 ? '¥' + amount.toFixed(2) : '-'}</td>`;
+            });
+            cells += `<td class="right-cell font-bold">¥${total.toFixed(2)}</td>`;
+            return `<tr>${cells}</tr>`;
+        }).join('');
+
+        // 3. 渲染结果
         document.getElementById('balancesResult').innerHTML = `
+            <h3 style="margin-top: 15px; margin-bottom: 5px; color: #333;">一、个人收支总览</h3>
             <table>
                 <thead><tr><th>姓名</th><th class="right-cell">垫付总额</th><th class="right-cell">消费总额</th><th class="right-cell">应结</th></tr></thead>
-                <tbody>${rows}</tbody>
+                <tbody>${balanceRows}</tbody>
+            </table>
+            
+            <h3 style="margin-top: 20px; margin-bottom: 5px; color: #333;">二、个人消费分类明细</h3>
+            <p style="font-size: 0.9em; color: #666; margin-top: 0; margin-bottom: 8px;">（按实际分摊到个人的金额统计）</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>姓名</th>
+                        <th class="right-cell">餐饮</th>
+                        <th class="right-cell">交通</th>
+                        <th class="right-cell">门票</th>
+                        <th class="right-cell">住宿</th>
+                        <th class="right-cell">其他</th>
+                        <th class="right-cell">个人合计</th>
+                    </tr>
+                </thead>
+                <tbody>${categoryRows}</tbody>
             </table>
         `;
         document.getElementById('balancesResult').classList.remove('hidden');
@@ -602,6 +683,205 @@
         link.click();
         document.body.removeChild(link);
         showNotification("费用明细已导出");
+    }
+
+    // ===== 优化版：导入CSV相关函数 =====
+    function handleFileImport(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                let csvText = e.target.result;
+                // 1. 移除BOM头
+                csvText = csvText.replace(/^\uFEFF/, '');
+                
+                // 2. 按行分割（兼容Windows和Mac换行符）
+                const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
+                
+                if (lines.length < 2) {
+                    showNotification("CSV文件为空或只有表头，没有数据！");
+                    event.target.value = '';
+                    return;
+                }
+
+                // 3. 解析表头（不强制严格匹配，只要列数对就行）
+                const headers = parseCSVLine(lines[0]);
+                if (headers.length < 7) {
+                    showNotification(`CSV列数不对！需要至少7列，当前只有${headers.length}列。`);
+                    event.target.value = '';
+                    return;
+                }
+
+                // 4. 解析数据行
+                const validData = [];
+                const errors = [];
+                const categories = ['餐饮', '交通', '门票', '住宿', '其他'];
+                const newMembers = new Set();
+
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+
+                    const rowNum = i + 1;
+                    const values = parseCSVLine(line);
+
+                    if (values.length < 7) {
+                        errors.push(`第${rowNum}行：列数不足，跳过`);
+                        continue;
+                    }
+
+                    // 提取字段（按位置，不按表头名）
+                    const date = values[0].trim();
+                    const amountStr = values[1].trim();
+                    const category = values[3].trim();
+                    const description = values[4].trim();
+                    const payer = values[5].trim();
+                    const splitStr = values[6].trim();
+
+                    // 验证日期
+                    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+                        errors.push(`第${rowNum}行：日期格式错误（需要YYYY-MM-DD），跳过`);
+                        continue;
+                    }
+
+                    // 验证金额
+                    const amount = parseFloat(amountStr);
+                    if (isNaN(amount) || amount <= 0) {
+                        errors.push(`第${rowNum}行：金额无效，跳过`);
+                        continue;
+                    }
+
+                    // 验证大类（如果不在列表里，自动改为"其他"）
+                    let finalCategory = category;
+                    if (!categories.includes(category)) {
+                        finalCategory = "其他";
+                    }
+
+                    // 验证说明
+                    if (!description) {
+                        errors.push(`第${rowNum}行：说明为空，跳过`);
+                        continue;
+                    }
+
+                    // 验证付款人
+                    if (!payer) {
+                        errors.push(`第${rowNum}行：付款人为空，跳过`);
+                        continue;
+                    }
+
+                    // 解析分摊人（兼容逗号或分号分隔）
+                    let splitAmong = [];
+                    if (splitStr.includes(';')) {
+                        splitAmong = splitStr.split(';').map(s => s.trim()).filter(s => s);
+                    } else if (splitStr.includes(',')) {
+                        splitAmong = splitStr.split(',').map(s => s.trim()).filter(s => s);
+                    } else {
+                        splitAmong = [splitStr];
+                    }
+
+                    if (splitAmong.length === 0) {
+                        errors.push(`第${rowNum}行：分摊人为空，跳过`);
+                        continue;
+                    }
+
+                    // 收集新成员
+                    newMembers.add(payer);
+                    splitAmong.forEach(name => newMembers.add(name));
+
+                    // 验证通过
+                    validData.push({
+                        id: Date.now() + Math.floor(Math.random() * 10000),
+                        date: date,
+                        amount: amount,
+                        category: finalCategory,
+                        description: description,
+                        payer: payer,
+                        splitAmong: splitAmong
+                    });
+                }
+
+                // 5. 处理结果
+                if (validData.length === 0) {
+                    showNotification(`没有找到有效的数据！错误：${errors.slice(0, 3).join('；')}`);
+                    event.target.value = '';
+                    return;
+                }
+
+                // 准备确认信息
+                let confirmMsg = `解析完成！\n\n✅ 有效数据：${validData.length} 条`;
+                if (errors.length > 0) {
+                    confirmMsg += `\n⚠️ 跳过无效行：${errors.length} 条`;
+                }
+                
+                // 检查新成员
+                const existingMembers = new Set(appData.participants);
+                const membersToAdd = [];
+                newMembers.forEach(name => {
+                    if (!existingMembers.has(name)) {
+                        membersToAdd.push(name);
+                    }
+                });
+
+                if (membersToAdd.length > 0) {
+                    confirmMsg += `\n\n🆕 将自动添加新成员：${membersToAdd.join('、')}`;
+                }
+
+                confirmMsg += `\n\n是否确认导入？`;
+
+                if (confirm(confirmMsg)) {
+                    // 执行导入
+                    membersToAdd.forEach(name => appData.participants.push(name));
+                    appData.expenses = [...appData.expenses, ...validData];
+                    saveData();
+                    renderAll();
+                    
+                    if (!document.getElementById('balancesResult').classList.contains('hidden')) {
+                        calculateBalances();
+                    }
+
+                    showNotification(`成功导入 ${validData.length} 条记录！`);
+                }
+
+            } catch (error) {
+                console.error("导入错误:", error);
+                showNotification(`导入出错：${error.message}\n请确保是CSV格式文件。`);
+            }
+            
+            event.target.value = '';
+        };
+
+        reader.readAsText(file, 'UTF-8');
+    }
+
+    // 通用的CSV行解析函数（处理带引号的字段）
+    function parseCSVLine(line) {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            
+            if (char === '"') {
+                if (inQuotes && line[i + 1] === '"') {
+                    // 处理双引号转义
+                    current += '"';
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (char === ',' && !inQuotes) {
+                result.push(current);
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        
+        result.push(current);
+        return result;
     }
 
     // ===== 筛选相关函数 =====
@@ -656,6 +936,7 @@
         const sorted = [...expenses].sort((a, b) => new Date(b.date) - new Date(a.date));
         const rows = sorted.map(e => {
             const per = (e.amount / e.splitAmong.length).toFixed(2);
+            // 新列顺序：日期、金额、大类、说明、付款人、分摊人、人均、删除
             return `<tr>
                 <td>${e.date}</td>
                 <td class="right-cell">¥${e.amount.toFixed(2)}</td>
@@ -669,20 +950,12 @@
         }).join('');
         el.innerHTML = `<table>
             <thead><tr>
-                <th>日期</th>
-                <th class="right-cell">金额</th>
-                <th>大类</th>
-                <th>说明</th>
-                <th>付款人</th>
-                <th class="left-cell">分摊人</th>
-                <th class="right-cell">人均</th>
-                <th class="center-cell">删除</th>
+                <th>日期</th><th class="right-cell">金额</th><th>大类</th><th>说明</th><th>付款人</th><th class="left-cell">分摊人</th><th class="right-cell">人均</th><th class="center-cell">删除</th>
             </tr></thead>
             <tbody>${rows}</tbody>
         </table>`;
     }
 
-    // 替换原来的 renderExpensesList
     function renderExpensesList() {
         updateFilterOptions();
         applyFilters(); // 自动应用当前筛选条件
@@ -712,8 +985,9 @@
         renderExpensesList();
     }
 
+    // 修复后的设置中心折叠函数
     function toggleSettingsPanel() {
-        const header = document.querySelector('.collapsible-header');
+        const header = document.getElementById('settingsHeader');
         const content = document.getElementById('settingsPanelContent');
         header.classList.toggle('collapsed');
         content.classList.toggle('hidden');
@@ -724,6 +998,3 @@
 
 </body>
 </html>
-
-
-
