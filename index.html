@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>旅行记账本 v20260410.1500</title>
+    <title>旅行记账本 v20260410.1515</title>
     <style>
         /* ===== 基础配色 ===== */
         :root {
@@ -315,8 +315,8 @@
         /* 强制重置单选和复选框的默认边距，固定宽高 */
         .radio-item input[type="radio"],
         .checkbox-item input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
+            width: 15px;
+            height: 15px;
             margin: 0;
             margin-right: 8px;
             flex-shrink: 0;
@@ -358,8 +358,42 @@
         #balancesResult table td {
             text-align: center;
         }
-        
 
+        /* 自定义复选框：打勾样式 */
+        .checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin: 0 8px 0 0;
+            flex-shrink: 0;
+            -webkit-appearance: none;
+            appearance: none;
+            border: 2px solid var(--border-color);
+            border-radius: 5px;
+            background: white;
+            transition: all 0.1s;
+            position: relative;
+            cursor: pointer;
+        }
+        .checkbox-item input[type="checkbox"]:checked {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        .checkbox-item input[type="checkbox"]:checked::after {
+            content: "✓";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            line-height: 1;
+        }        
+        
+        .radio-item input[type="radio"] {
+            width: 10px;
+            height: 18px;
+        }
 
     </style>
 </head>
@@ -395,7 +429,7 @@
                 </div>
             </div>
             <div class="form-group full-width"><label>📝 费用说明 <span style="color: var(--danger-color);">*</span></label><input type="text" id="expenseDesc" placeholder="例如：北京-上海高铁票..."></div>
-            <div class="form-group"><label>👤 支付人</label><select id="expensePayer"></select></div>
+            <div class="form-group"><label>👤 支付人</label><div class="radio-list" id="expensePayerRadios"></div> </div>
             <div class="form-group full-width"><label>👥 费用分摊给</label><div class="checkbox-list" id="splitUsersCheckboxes"></div></div>
         </div>
         <button class="btn btn-success btn-lg" onclick="addExpense()" style="margin-top: 8px;">📝 记录费用</button>
@@ -500,7 +534,8 @@
     }
     function addExpense() {
         const amount = parseFloat(document.getElementById('expenseAmount').value);
-        const payer = document.getElementById('expensePayer').value;
+        const payerRadio = document.querySelector('input[name="expensePayer"]:checked');
+        const payer = payerRadio ? payerRadio.value : '';
         const baseDate = document.getElementById('expenseDate').value;
         const desc = document.getElementById('expenseDesc').value.trim();
         const cat = document.querySelector('input[name="expenseCategory"]:checked')?.value;
@@ -646,9 +681,27 @@
         el.innerHTML = appData.participants.length ? appData.participants.map(p=>`<span class="badge">${p} <button class="btn btn-sm btn-danger" onclick="removeParticipant('${p}')" style="padding:2px 8px; margin-left:6px;">×</button></span>`).join('') : '<span style="color:#a999b9;">暂无成员</span>';
     }
     function renderExpenseForm() {
-        const payer = document.getElementById('expensePayer'), splitDiv = document.getElementById('splitUsersCheckboxes');
-        payer.innerHTML = appData.participants.length ? appData.participants.map(p=>`<option>${p}</option>`).join('') : '<option>请先添加成员</option>';
-        splitDiv.innerHTML = appData.participants.length ? appData.participants.map(p=>`<div class="checkbox-item"><input type="checkbox" id="chk_${p}" value="${p}" checked><label for="chk_${p}">${p}</label></div>`).join('') : '<span style="color:#a999b9;">请先添加成员</span>';
+        // 支付人单选按钮渲染
+        const payerDiv = document.getElementById('expensePayerRadios');
+        const splitDiv = document.getElementById('splitUsersCheckboxes');
+        
+        if (appData.participants.length) {
+            payerDiv.innerHTML = appData.participants.map((p, index) => `
+                <div class="radio-item">
+                    <input type="radio" id="payer_${p}" name="expensePayer" value="${p}" ${index === 0 ? 'checked' : ''}>
+                    <label for="payer_${p}">${p}</label>
+                </div>
+            `).join('');
+            splitDiv.innerHTML = appData.participants.map(p => `
+                <div class="checkbox-item">
+                    <input type="checkbox" id="chk_${p}" value="${p}" checked>
+                    <label for="chk_${p}">${p}</label>
+                </div>
+            `).join('');
+        } else {
+            payerDiv.innerHTML = '<span style="color:#a999b9;">请先添加成员</span>';
+            splitDiv.innerHTML = '<span style="color:#a999b9;">请先添加成员</span>';
+        }
     }
     function renderAll() { renderParticipants(); renderExpenseForm(); renderExpensesList(); }
     function toggleSettingsPanel() { document.getElementById('settingsHeader').classList.toggle('collapsed'); document.getElementById('settingsPanelContent').classList.toggle('hidden'); }
