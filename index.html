@@ -3,22 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>旅行记账本 v20260410.1552</title>
+    <title>旅行记账本 v20260411.2122</title>
     <style>
         /* ===== 基础配色 ===== */
         :root {
-            --primary-color: #7c6a9c;
-            --success-color: #6f8f7c;
-            --danger-color: #c06c6c;
-            --light-bg: #f9f9fc;
-            --border-color: #e0d9eb;
-            --main-bg: #f5f3f9;
+            --primary-color: #2563eb;      /* 主蓝色，用于按钮、标题等 */
+            --success-color: #10b981;      /* 绿色，用于成功/记录按钮 */
+            --danger-color: #ef4444;       /* 红色，用于删除等警示操作 */
+            --light-bg: #f8fafc;
+            --border-color: #e2e8f0;
+            --main-bg: #f5f7fb;            /* 整体背景浅灰蓝 */
             --card-bg: #ffffff;
-            --header-bg: #f0f0f5;
-            --header-color: #7c6a9c;
-            --text-secondary: #5e5270;
-            --table-header-bg: #f2f2f5;
+            --header-bg: #f1f5f9;          /* 标题栏浅灰 */
+            --header-color: #0f172a;       /* 标题文字深色 */
+            --text-secondary: #475569;
+            --table-header-bg: #f1f5f9;    /* 表头浅灰 */
         }
+
+        /* 模块卡片背景微调 */
+        .card-record-expense { background-color: #f0f9ff; }  /* 极浅蓝 */
+        .card-expenses-list   { background-color: #f8fafc; }  /* 灰白 */
+        .card-settlement-center { background-color: #fefce8; } /* 奶黄微调 */
+
 
         * {
             box-sizing: border-box;
@@ -76,10 +82,11 @@
             font-weight: 400;
         }
 
+        /* 提示横幅 */
         .hint-banner {
-            background-color: #e8e0f0;
-            border: 1px solid #cdbde0;
-            color: #3b2e4a;
+            background-color: #dbeafe;
+            border-color: #bfdbfe;
+            color: #1e3a8a;
             padding: 12px 16px;
             text-align: center;
             font-size: 0.9em;
@@ -105,7 +112,12 @@
             transition: all 0.15s;
             white-space: nowrap;
         }
-        .btn:hover { opacity: 0.85; }
+
+        /* 按钮悬浮效果 */
+        .btn:hover {
+            opacity: 0.9;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
         .btn-sm { padding: 6px 12px; font-size: 0.85em; }
         .btn-lg { padding: 14px 24px; font-size: 1em; }
         .btn-danger { background-color: var(--danger-color); }
@@ -138,10 +150,11 @@
             appearance: none;
             padding-right: 8px;
         }
+
+        /* 输入框聚焦 */
         input:focus, select:focus {
-            outline: none;
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 4px rgba(124, 106, 156, 0.1);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
         }
 
         /* 桌面两列 */
@@ -200,15 +213,17 @@
             padding: 14px 10px;
             border-bottom: 1px solid #eeeaf3;
         }
+
+        /* 表头文字颜色加深 */
         th {
             background-color: var(--table-header-bg);
             font-weight: 600;
-            color: #2e253a;
+            color: #1e293b;
             border-bottom: 2px solid var(--border-color);
             text-align: center;
         }
         td { color: #333; text-align: center; }
-        .right-cell { text-align: right; }
+        .right-cell { text-align: center; }
         .center-cell { text-align: center; }
         tr:last-child td { border-bottom: none; }
 
@@ -330,11 +345,12 @@
         .checkbox-item input[type="checkbox"] {
             border-radius: 6px;
         }
+
+        /* 单选/复选框选中色 */
         .radio-item input[type="radio"]:checked,
         .checkbox-item input[type="checkbox"]:checked {
             background-color: var(--primary-color);
             border-color: var(--primary-color);
-            box-shadow: inset 0 0 0 4px white;
         }
         /* 确保标签文字不挤压 */
         .radio-item label,
@@ -360,8 +376,8 @@
         }
 
         /* 应收应付颜色 */
-        .amount-should-get { color: #2e8b57; font-weight: 500; }  /* 绿色 + */
-        .amount-should-pay { color: #d9534f; font-weight: 500; }  /* 红色 − */
+        .amount-should-get { color: #10b981; font-weight: 500; }  /* 绿色 + */
+        .amount-should-pay { color: #ef4444; font-weight: 500; }  /* 红色 − */
 
         /* 自定义复选框：打勾样式 */
         .checkbox-item input[type="checkbox"] {
@@ -408,7 +424,7 @@
     ⚡ 请在设置中心添加成员、设置账本名称，然后开始记账。<br>本账本支持单机存储明细，可导出导入数据。
 </div>
 
-<h1 class="main-title">
+<h1 class="main-title" style="color: var(--primary-color);">
     🧾 旅行记账本
     <span id="ledgerNameDisplay" class="ledger-name-part">(未命名)</span>
 </h1>
@@ -416,8 +432,8 @@
 <!-- 记录新费用 -->
 <div class="card card-record-expense" style="background-color: #faf7ff;">
     <h2 id="expenseHeader" class="collapsible-header" onclick="toggleExpenseForm()">
-        记录新费用
-        <span style="font-size:0.8rem; color:#6b5b7e; font-weight:normal;">(自动补全时分)</span>
+        记录一笔
+        <span style="font-size:0.8rem; color:var(--primary-color); font-weight:normal;">(自动补全时分)</span>
     </h2>
     <div id="expenseFormContent">
         <div class="expense-form-grid">
