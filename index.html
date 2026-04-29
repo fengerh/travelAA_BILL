@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>旅行记账本 v20260429.1310</title>
+    <title>旅行记账本 v20260429.1320</title>
     <style>
         /* ===== 基础配色 ===== */
         :root {
@@ -299,9 +299,12 @@
                 overflow: visible;      /* 禁止横向滚动条出现 */
             }
             .category-radio-list .radio-item {
-                font-size: 0.85em;      /* 适当缩小保证一行放下5个 */
-                padding: 2px 0;
-                gap: 4px;
+                font-size: 1em;                     /* 大类文字正常大小 */
+            }
+            .category-radio-list input[type="radio"] {
+                width: 10px;                        /* 原为12px，稍微变小 */
+                height: 10px;
+                margin-right: 2px;
             }
             
             table { font-size: 0.85em; min-width: 600px; }
@@ -318,7 +321,7 @@
             table { min-width: 550px; }
             .badge { padding: 4px 10px; font-size: 0.8em; }
             .radio-item, .checkbox-item {
-                font-size: 0.82em;      /* 稍微缩小一点保证一行放下 */
+                /* font-size: 0.82em;      稍微缩小一点保证一行放下 */
                 padding: 2px 0; 
                 gap: 2px;
             }
@@ -419,10 +422,10 @@
             <div class="form-group full-width">
                 <label>📂 费用大类 <span style="color: var(--danger-color);">*</span></label>
                 <div class="radio-list category-radio-list">
-                    <div class="radio-item"><input type="radio" id="cat_food" name="expenseCategory" value="餐饮"><label for="cat_food">餐饮</label></div>
-                    <div class="radio-item"><input type="radio" id="cat_transport" name="expenseCategory" value="交通"><label for="cat_transport">交通</label></div>
-                    <div class="radio-item"><input type="radio" id="cat_ticket" name="expenseCategory" value="门票"><label for="cat_ticket">门票</label></div>
-                    <div class="radio-item"><input type="radio" id="cat_accommodation" name="expenseCategory" value="住宿"><label for="cat_accommodation">住宿</label></div>
+                    <div class="radio-item"><input type="radio" id="cat_food" name="expenseCategory" value="餐饮"><label for="cat_food">食</label></div>
+                    <div class="radio-item"><input type="radio" id="cat_transport" name="expenseCategory" value="交通"><label for="cat_transport">行</label></div>
+                    <div class="radio-item"><input type="radio" id="cat_ticket" name="expenseCategory" value="门票"><label for="cat_ticket">票</label></div>
+                    <div class="radio-item"><input type="radio" id="cat_accommodation" name="expenseCategory" value="住宿"><label for="cat_accommodation">住</label></div>
                     <div class="radio-item"><input type="radio" id="cat_other" name="expenseCategory" value="其他"><label for="cat_other">其他</label></div>
                 </div>
             </div>
