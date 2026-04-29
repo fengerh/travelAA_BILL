@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>旅行记账本 v20260429.1000</title>
+    <title>旅行记账本 v20260429.1010</title>
     <style>
         /* ===== 基础配色 ===== */
         :root {
@@ -413,17 +413,21 @@
             <div class="form-group"><label>👤 支付人</label><div class="radio-list" id="expensePayerRadios"></div> </div>
             <div class="form-group full-width"><label>👥 费用分摊给</label><div class="checkbox-list" id="splitUsersCheckboxes"></div></div>
         </div>
-        <button id="addExpenseBtn" class="btn btn-success btn-lg" onclick="addExpense()" style="margin-top: 8px;">📝 记录费用</button>
+        <div style="display: flex; gap: 10px; margin-top: 8px;">
+            <button id="addExpenseBtn" class="btn btn-success btn-lg" onclick="addExpense()">📝 记录费用</button>
+            <!-- 新增：取消编辑按钮，默认隐藏，编辑时显示 -->
+            <button id="cancelEditBtn" class="btn btn-lg" style="background-color: #9ca3af; display: none;" onclick="cancelEdit()">取消编辑</button>
+        </div>
     </div>
 </div>
 
 <!-- 费用明细 -->
 <div class="card card-expenses-list" style="background-color: #dde9ff;">
     <div class="flex-between">
-        <h2 id="expensesHeader" class="collapsible-header" onclick="toggleExpensesPanel()">📋 费用明细</h2>
+        <h2 id="expensesHeader" class="collapsible-header collapsed" onclick="toggleExpensesPanel()">📋 费用明细</h2>
         <button class="btn btn-sm" onclick="event.stopPropagation(); toggleFilterPanel()">🔍 筛选</button>
     </div>
-    <div id="expensesContentWrapper">
+    <div id="expensesContentWrapper" class="hidden">
         <div id="filterPanel" class="hidden" style="margin: 12px 0 16px; padding: 14px; background: #dde9ff; border-radius: 8px; border: 1px solid #dde9ff;">
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 12px;">
                 <div><label>开始</label><input type="date" id="filterDateFrom" oninput="applyFilters()"></div>
@@ -538,7 +542,7 @@
         }
     }
 
-    // 重置记录表单到初始状态（但保留日期时间为当前）
+    // 重置记录表单到初始状态（保留当前日期时间，并退出编辑模式）
     function resetExpenseForm() {
         document.getElementById('expenseAmount').value = '';
         document.getElementById('expenseDesc').value = '';
@@ -547,10 +551,17 @@
         document.getElementById('expenseTime').value = 
             String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
         document.querySelectorAll('input[name="expenseCategory"]').forEach(r => r.checked = false);
-        // 重新生成支付人/分摊人（默认选中第一个支付人、全选分摊人）
-        renderExpenseForm();
+        renderExpenseForm();   // 重新生成支付人/分摊人（默认选中第一个支付人、全选分摊人）
         editingExpenseId = null;
         document.getElementById('addExpenseBtn').textContent = '📝 记录费用';
+        // 隐藏取消编辑按钮
+        document.getElementById('cancelEditBtn').style.display = 'none';
+    }
+
+    // 取消编辑，直接调用重置
+    function cancelEdit() {
+        resetExpenseForm();
+        showNotification('已取消编辑');
     }
 
     function addExpense() {
@@ -577,7 +588,11 @@
         const dateStr = `${baseDate} ${time}`;
 
         if (editingExpenseId) {
-            // 编辑模式：更新已有记录
+            // 编辑模式：先弹出确认框
+            if (!confirm('确认更新这条费用记录吗？')) {
+                return;  // 用户取消，不执行更新，保持当前编辑状态
+            }
+            // 更新已有记录
             const idx = appData.expenses.findIndex(e => e.id === editingExpenseId);
             if (idx === -1) {
                 showNotification('记录不存在');
@@ -638,7 +653,7 @@
         document.querySelectorAll('input[name="expenseCategory"]').forEach(r => {
             r.checked = (r.value === exp.category);
         });
-        // 支付人（确保radio已生成）
+        // 支付人
         const payerRadio = document.querySelector(`input[name="expensePayer"][value="${exp.payer}"]`);
         if (payerRadio) payerRadio.checked = true;
         // 分摊人
@@ -647,6 +662,8 @@
         });
         editingExpenseId = id;
         document.getElementById('addExpenseBtn').textContent = '✏️ 更新费用';
+        // 显示取消编辑按钮
+        document.getElementById('cancelEditBtn').style.display = 'inline-block';
         // 确保表单可见
         const form = document.getElementById('expenseFormContent');
         const header = document.getElementById('expenseHeader');
