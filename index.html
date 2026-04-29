@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>旅行记账本 v20260429.1010</title>
+    <title>旅行记账本 v20260429.1110</title>
     <style>
         /* ===== 基础配色 ===== */
         :root {
@@ -120,6 +120,7 @@
             margin: 0 4px;
             white-space: nowrap;
             font-size: 0.9em;
+            font-weight: normal;   /* 新增这一行 */
         }
         .action-link.delete-link {
             color: #dc2626;
@@ -232,7 +233,7 @@
 
         .collapsible-header {
             cursor: pointer;
-            display: flex;
+            display: inline-flex;
             justify-content: space-between;
             align-items: center;
             user-select: none;
@@ -425,7 +426,7 @@
 <div class="card card-expenses-list" style="background-color: #dde9ff;">
     <div class="flex-between">
         <h2 id="expensesHeader" class="collapsible-header collapsed" onclick="toggleExpensesPanel()">📋 费用明细</h2>
-        <button class="btn btn-sm" onclick="event.stopPropagation(); toggleFilterPanel()">🔍 筛选</button>
+        <button class="btn btn-sm" onclick="event.stopPropagation(); handleFilterClick()">🔍 筛选</button>
     </div>
     <div id="expensesContentWrapper" class="hidden">
         <div id="filterPanel" class="hidden" style="margin: 12px 0 16px; padding: 14px; background: #dde9ff; border-radius: 8px; border: 1px solid #dde9ff;">
@@ -444,9 +445,11 @@
 
 <!-- 结算中心 -->
 <div class="card card-settlement-center" style="background-color: #f4f6fa;">
-    <h2 id="settlementHeader" class="collapsible-header collapsed" onclick="toggleSettlementPanel()">💰 结算中心</h2>
+    <div class="flex-between">
+        <h2 id="settlementHeader" class="collapsible-header collapsed" onclick="toggleSettlementPanel()">💰 结算中心</h2>
+        <button class="btn btn-sm" onclick="event.stopPropagation(); handleCalculateClick()">🧮 计算并查看结算单</button>
+    </div>
     <div id="settlementContentWrapper" class="hidden">
-        <button class="btn" onclick="calculateBalances()" style="margin: 10px 0 16px;">🧮 计算并查看结算单</button>
         <div class="table-container"><div id="balancesResult" class="hidden"></div></div>
     </div>
 </div>
@@ -463,10 +466,10 @@
         <div class="form-group">
             <label>数据管理</label>
             <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
-                <label for="importFile" class="import-label" style="background-color: var(--success-color);">📤 导入CSV</label>
+                <label for="importFile" class="action-link" style="cursor:pointer;">📤 导入CSV</label>
                 <input type="file" id="importFile" accept=".csv" onchange="handleFileImport(event)" style="display:none;">
-                <button class="btn" onclick="exportToCSV()" style="background-color: var(--primary-color);">📥 导出Excel</button>
-                <button class="btn btn-danger" onclick="resetAppDataWithExport()">⚠️ 重置</button>
+                <span class="action-link" onclick="exportToCSV()">📥 导出Excel</span>
+                <span class="action-link delete-link" onclick="resetAppDataWithExport()">⚠️ 重置</span>
             </div>
         </div>
     </div>
@@ -936,6 +939,28 @@
     function toggleSettlementPanel() {
         document.getElementById('settlementHeader').classList.toggle('collapsed');
         document.getElementById('settlementContentWrapper').classList.toggle('hidden');
+    }
+
+    // 筛选按钮点击处理：如果费用明细面板折叠则先展开，再切换筛选面板
+    function handleFilterClick() {
+        const wrapper = document.getElementById('expensesContentWrapper');
+        const header = document.getElementById('expensesHeader');
+        if (wrapper.classList.contains('hidden')) {
+            wrapper.classList.remove('hidden');
+            header.classList.remove('collapsed');
+        }
+        toggleFilterPanel();
+    }
+
+    // 结算计算按钮点击处理：如果结算面板折叠则先展开，再执行计算
+    function handleCalculateClick() {
+        const wrapper = document.getElementById('settlementContentWrapper');
+        const header = document.getElementById('settlementHeader');
+        if (wrapper.classList.contains('hidden')) {
+            wrapper.classList.remove('hidden');
+            header.classList.remove('collapsed');
+        }
+        calculateBalances();
     }
 
     window.onload = loadData;
