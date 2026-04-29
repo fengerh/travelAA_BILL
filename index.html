@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>旅行记账本 v20260429.1110</title>
+    <title>旅行记账本 v20260429.1310</title>
     <style>
         /* ===== 基础配色 ===== */
         :root {
@@ -166,7 +166,7 @@
         .radio-list, .checkbox-list {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px 16px;
+            gap: 4px 6px;
             margin-top: 6px;
         }
         .radio-item, .checkbox-item {
@@ -176,6 +176,7 @@
             white-space: nowrap;
             padding: 4px 0;
         }
+        
 
         @media (max-width: 480px) {
             .radio-list, .checkbox-list {
@@ -287,11 +288,22 @@
                 width: 100%;
                 max-width: 100%;
             }
-            .radio-list, .checkbox-list {
+            /* .radio-list, .checkbox-list {
                 display: flex;
-                flex-wrap: wrap;
-                gap: 6px 12px;
+                flex-wrap: nowrap;
+                gap: 6px 8px;
+            } */
+            
+            .category-radio-list {
+                flex-wrap: nowrap;
+                overflow: visible;      /* 禁止横向滚动条出现 */
             }
+            .category-radio-list .radio-item {
+                font-size: 0.85em;      /* 适当缩小保证一行放下5个 */
+                padding: 2px 0;
+                gap: 4px;
+            }
+            
             table { font-size: 0.85em; min-width: 600px; }
             th, td { padding: 12px 8px; }
             .btn { padding: 8px 16px; font-size: 0.9em; }
@@ -306,16 +318,18 @@
             table { min-width: 550px; }
             .badge { padding: 4px 10px; font-size: 0.8em; }
             .radio-item, .checkbox-item {
-                font-size: 0.9em;
+                font-size: 0.82em;      /* 稍微缩小一点保证一行放下 */
+                padding: 2px 0; 
+                gap: 2px;
             }
         }
 
         .radio-item input[type="radio"],
         .checkbox-item input[type="checkbox"] {
-            width: 15px;
-            height: 15px;
+            width: 12px;
+            height: 12px;
             margin: 0;
-            margin-right: 8px;
+            margin-right: 4px;
             flex-shrink: 0;
             -webkit-appearance: none;
             appearance: none;
@@ -325,7 +339,9 @@
             transition: all 0.1s;
         }
         .checkbox-item input[type="checkbox"] {
-            border-radius: 6px;
+            width: 14px;
+            height: 14px;
+            border-radius: 4px;   /* 缩小后保持视觉协调 */
         }
         .radio-item input[type="radio"]:checked,
         .checkbox-item input[type="checkbox"]:checked {
@@ -402,7 +418,7 @@
             </div>
             <div class="form-group full-width">
                 <label>📂 费用大类 <span style="color: var(--danger-color);">*</span></label>
-                <div class="radio-list">
+                <div class="radio-list category-radio-list">
                     <div class="radio-item"><input type="radio" id="cat_food" name="expenseCategory" value="餐饮"><label for="cat_food">餐饮</label></div>
                     <div class="radio-item"><input type="radio" id="cat_transport" name="expenseCategory" value="交通"><label for="cat_transport">交通</label></div>
                     <div class="radio-item"><input type="radio" id="cat_ticket" name="expenseCategory" value="门票"><label for="cat_ticket">门票</label></div>
@@ -491,6 +507,7 @@
         updateLedgerNameDisplay();
         renderAll();
         updateHintBannerVisibility();
+        initDateTimeNowOnClear();
     }
 
     function saveData() { localStorage.setItem('travelAccountingApp', JSON.stringify(appData)); }
@@ -500,6 +517,24 @@
         n.textContent = msg;
         n.classList.add('show');
         setTimeout(() => n.classList.remove('show'), 2800);
+    }
+
+    function initDateTimeNowOnClear() {
+        const dateInput = document.getElementById('expenseDate');
+        const timeInput = document.getElementById('expenseTime');
+
+        function setNow() {
+            const now = new Date();
+            dateInput.valueAsDate = now;
+            timeInput.value = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+        }
+
+        dateInput.addEventListener('input', () => {
+            if (!dateInput.value) setNow();
+        });
+        timeInput.addEventListener('input', () => {
+            if (!timeInput.value) setNow();
+        });
     }
 
     function updateHintBannerVisibility() {
@@ -888,9 +923,56 @@
 
     function renderParticipants() {
         const el = document.getElementById('participantsList');
-        el.innerHTML = appData.participants.length
-            ? appData.participants.map(p => `<span class="badge">${p} <button class="btn btn-sm btn-danger" onclick="removeParticipant('${p}')" style="padding:2px 8px; margin-left:6px;">×</button></span>`).join('')
-            : '<span style="color:#a999b9;">暂无成员</span>';
+        if (appData.participants.length) {
+            el.innerHTML = appData.participants.map(p => `
+                <span class="badge">
+                    ${p}
+                    <span class="action-link" onclick="renameParticipant('${p}')" style="margin-left:6px; font-size:0.85em;">更名</span>
+                    <button class="btn btn-sm btn-danger" onclick="removeParticipant('${p}')" style="padding:2px 8px; margin-left:4px;">×</button>
+                </span>
+            `).join('');
+        } else {
+            el.innerHTML = '<span style="color:#a999b9;">暂无成员</span>';
+        }
+    }
+
+    function renameParticipant(oldName) {
+        const newName = prompt(`将“${oldName}”更名为：`, oldName);
+        if (!newName || newName === oldName) return;
+        const trimmed = newName.trim();
+        if (!trimmed) return showNotification('名称不能为空');
+        if (appData.participants.includes(trimmed)) return showNotification('成员已存在');
+
+        // 更新参与者列表中的名字
+        const index = appData.participants.indexOf(oldName);
+        appData.participants[index] = trimmed;
+
+        // 更新所有费用中的支付人和分摊人
+        appData.expenses.forEach(e => {
+            if (e.payer === oldName) e.payer = trimmed;
+            e.splitAmong = e.splitAmong.map(name => name === oldName ? trimmed : name);
+        });
+
+        saveData();
+        renderAll();
+        // 如果当前正在编辑费用，且编辑的表单中支付人或分摊人涉及旧名字，需要刷新表单选项
+        if (editingExpenseId) {
+            // 简单处理：重新渲染表单即可（不改变已填数据，因为只是选项名字变了）
+            renderExpenseForm();
+            // 恢复编辑状态的选中项
+            const exp = appData.expenses.find(e => e.id === editingExpenseId);
+            if (exp) {
+                document.querySelectorAll('input[name="expenseCategory"]').forEach(r => {
+                    r.checked = (r.value === exp.category);
+                });
+                const payerRadio = document.querySelector(`input[name="expensePayer"][value="${exp.payer}"]`);
+                if (payerRadio) payerRadio.checked = true;
+                document.querySelectorAll('#splitUsersCheckboxes input').forEach(cb => {
+                    cb.checked = exp.splitAmong.includes(cb.value);
+                });
+            }
+        }
+        showNotification(`已更名为“${trimmed}”`);
     }
 
     function renderExpenseForm() {
