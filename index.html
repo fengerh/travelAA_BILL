@@ -3,32 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>旅行记账本 v20260427.2130</title>
+    <title>旅行记账本 v20260429.1000</title>
     <style>
         /* ===== 基础配色 ===== */
         :root {
-            --primary-color: #60a5fa;      /* 低饱和度蓝色，用于按钮、标题等 */
-            --success-color: #60a5fa;      /* 低饱和度蓝色，用于成功/记录按钮 */
-            --danger-color: #60a5fa;       /* 低饱和度蓝色，用于删除等操作 */
+            --primary-color: #60a5fa;
+            --success-color: #60a5fa;
+            --danger-color: #60a5fa;
             --light-bg: #f9fafb;
             --border-color: #e5e7eb;
-            --main-bg: #f9fafb;            /* 整体背景浅灰 */
+            --main-bg: #f9fafb;
             --card-bg: #ffffff;
-            --header-bg: #f3f4f6;          /* 标题栏浅灰 */
-            --header-color: #000000;       /* 标题文字黑色 */
-            --text-secondary: #374151;     /* 次要文字深灰色 */
-            --table-header-bg: #f3f4f6;    /* 表头浅灰 */
+            --header-bg: #f3f4f6;
+            --header-color: #000000;
+            --text-secondary: #374151;
+            --table-header-bg: #f3f4f6;
         }
 
-        /* 模块卡片背景微调 */
-        .card-record-expense { background-color: #ffffff; }  /* 白色 */
-        .card-expenses-list   { background-color: #ffffff; }  /* 白色 */
-        .card-settlement-center { background-color: #ffffff; } /* 白色 */
+        .card-record-expense { background-color: #ffffff; }
+        .card-expenses-list   { background-color: #ffffff; }
+        .card-settlement-center { background-color: #ffffff; }
 
-
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -82,7 +78,6 @@
             font-weight: 400;
         }
 
-        /* 提示横幅 */
         .hint-banner {
             background-color: #ffffff;
             border-color: #d1d5db;
@@ -94,7 +89,6 @@
             border-radius: 18px 18px 0 0;
             line-height: 1.5;
         }
-
         .hint-banner.hidden-banner { display: none; }
 
         .btn {
@@ -112,18 +106,25 @@
             transition: all 0.15s;
             white-space: nowrap;
         }
-
-        /* 按钮悬浮效果 */
-        .btn:hover {
-            opacity: 0.9;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
+        .btn:hover { opacity: 0.9; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .btn-sm { padding: 6px 12px; font-size: 0.85em; }
         .btn-lg { padding: 10px 20px; font-size: 1em; }
         .btn-danger { background-color: var(--danger-color); }
         .btn-success { background-color: var(--success-color); }
 
-        /* 表单 */
+        /* 文字操作链接（用于编辑/删除） */
+        .action-link {
+            cursor: pointer;
+            text-decoration: underline;
+            color: var(--primary-color);
+            margin: 0 4px;
+            white-space: nowrap;
+            font-size: 0.9em;
+        }
+        .action-link.delete-link {
+            color: #dc2626;
+        }
+
         .form-group { margin-bottom: 16px; }
         label {
             display: block;
@@ -141,8 +142,7 @@
             font-size: 16px;
             transition: border 0.15s;
         }
-        /* 针对日期输入框的 iPhone 修复 */
-        input[type="date"] {
+        input[type="date"], input[type="time"] {
             width: auto;
             min-width: 0;
             max-width: 100%;
@@ -150,14 +150,11 @@
             appearance: none;
             padding-right: 8px;
         }
-
-        /* 输入框聚焦 */
         input:focus, select:focus {
             border-color: var(--primary-color);
             box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.15);
         }
 
-        /* 桌面两列 */
         .expense-form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -165,7 +162,6 @@
         }
         .full-width { grid-column: span 2; }
 
-        /* 选项列表：移动端更精细的控制 */
         .radio-list, .checkbox-list {
             display: flex;
             flex-wrap: wrap;
@@ -177,10 +173,9 @@
             align-items: center;
             gap: 6px;
             white-space: nowrap;
-            /* 保证在 iPhone 上点击区域足够 */
             padding: 4px 0;
         }
-        /* 让选项在窄屏下均匀分布 */
+
         @media (max-width: 480px) {
             .radio-list, .checkbox-list {
                 margin-left: -4px;
@@ -191,7 +186,6 @@
             }
         }
 
-        /* 表格容器 */
         .table-container {
             overflow-x: auto;
             margin-top: 12px;
@@ -213,8 +207,6 @@
             padding: 12px 10px;
             border-bottom: 1px solid #e5e7eb;
         }
-
-        /* 表头文字颜色加深 */
         th {
             background-color: var(--table-header-bg);
             font-weight: 600;
@@ -280,45 +272,35 @@
             align-items: center;
         }
 
-        /* ========= 移动端专属优化 ========= */
         @media (max-width: 640px) {
             body { padding: 12px 10px; }
             .card { padding: 16px 14px; margin-bottom: 16px; }
             h1 { font-size: 1.6em; padding: 16px 18px; margin: -12px -10px 16px -10px; }
             h2 { font-size: 1.3em; margin-bottom: 12px; }
-
             .expense-form-grid {
                 grid-template-columns: 1fr;
                 gap: 8px;
             }
             .full-width { grid-column: span 1; }
-
-            /* 日期输入框在移动端更明确的宽度 */
-            input[type="date"] {
+            input[type="date"], input[type="time"] {
                 width: 100%;
                 max-width: 100%;
             }
-
-            /* 确保选项列表在移动端不溢出 */
             .radio-list, .checkbox-list {
                 display: flex;
                 flex-wrap: wrap;
                 gap: 6px 12px;
             }
-
             table { font-size: 0.85em; min-width: 600px; }
             th, td { padding: 12px 8px; }
-
             .btn { padding: 8px 16px; font-size: 0.9em; }
             .btn-lg { padding: 12px 20px; }
-
             #filterPanel > div {
                 grid-template-columns: 1fr !important;
                 gap: 10px !important;
             }
         }
 
-        /* iPhone 小屏特别处理 (如 iPhone SE) */
         @media (max-width: 380px) {
             table { min-width: 550px; }
             .badge { padding: 4px 10px; font-size: 0.8em; }
@@ -327,7 +309,6 @@
             }
         }
 
-        /* 强制重置单选和复选框的默认边距，固定宽高 */
         .radio-item input[type="radio"],
         .checkbox-item input[type="checkbox"] {
             width: 15px;
@@ -345,14 +326,11 @@
         .checkbox-item input[type="checkbox"] {
             border-radius: 6px;
         }
-
-        /* 单选/复选框选中色 */
         .radio-item input[type="radio"]:checked,
         .checkbox-item input[type="checkbox"]:checked {
             background-color: var(--primary-color);
             border-color: var(--primary-color);
         }
-        /* 确保标签文字不挤压 */
         .radio-item label,
         .checkbox-item label {
             margin-bottom: 0;
@@ -360,30 +338,6 @@
             font-weight: normal;
         }
 
-        @media (max-width: 640px) {
-            .radio-list, .checkbox-list {
-                gap: 10px 16px;
-            }
-            .radio-item, .checkbox-item {
-                padding: 2px 0;
-            }
-        }
-
-        /* 结算中心表格居中 */
-        #balancesResult table th,
-        #balancesResult table td {
-            text-align: center;
-        }
-
-        #balancesResult table .right-cell {
-            text-align: center;
-        }
-
-        /* 应收应付颜色 */
-        .amount-should-get { color: #04af2c; font-weight: 500; }  /* 绿色 + */
-        .amount-should-pay { color: #dd2f19; font-weight: 500; }  /* 红色 − */
-
-        /* 自定义复选框：打勾样式 */
         .checkbox-item input[type="checkbox"] {
             width: 18px;
             height: 18px;
@@ -412,14 +366,10 @@
             font-size: 14px;
             font-weight: bold;
             line-height: 1;
-        }        
-        
-        .radio-item input[type="radio"] {
-            width: 10px;
-            height: 18px;
         }
 
-
+        .amount-should-get { color: #04af2c; font-weight: 500; }
+        .amount-should-pay { color: #dd2f19; font-weight: 500; }
     </style>
 </head>
 <body>
@@ -437,12 +387,18 @@
 <div class="card card-record-expense" style="background-color: #f4f6fa;">
     <h2 id="expenseHeader" class="collapsible-header" onclick="toggleExpenseForm()">
         记录一笔
-        <span style="font-size:0.8rem; color:var(--header-color); font-weight:normal;">(自动补全时分)</span>
+        <span style="font-size:0.8rem; color:var(--header-color); font-weight:normal;">(可编辑日期与时间)</span>
     </h2>
     <div id="expenseFormContent">
         <div class="expense-form-grid">
             <div class="form-group"><label>💰 金额 (¥)</label><input type="number" step="0.01" id="expenseAmount" placeholder="0.00"></div>
-            <div class="form-group"><label>📅 日期</label><input type="date" id="expenseDate"></div>
+            <div class="form-group">
+                <label>📅 日期 & 时间</label>
+                <div style="display:flex; gap:8px;">
+                    <input type="date" id="expenseDate" style="flex:1;">
+                    <input type="time" id="expenseTime" style="flex:1;">
+                </div>
+            </div>
             <div class="form-group full-width">
                 <label>📂 费用大类 <span style="color: var(--danger-color);">*</span></label>
                 <div class="radio-list">
@@ -457,7 +413,7 @@
             <div class="form-group"><label>👤 支付人</label><div class="radio-list" id="expensePayerRadios"></div> </div>
             <div class="form-group full-width"><label>👥 费用分摊给</label><div class="checkbox-list" id="splitUsersCheckboxes"></div></div>
         </div>
-        <button class="btn btn-success btn-lg" onclick="addExpense()" style="margin-top: 8px;">📝 记录费用</button>
+        <button id="addExpenseBtn" class="btn btn-success btn-lg" onclick="addExpense()" style="margin-top: 8px;">📝 记录费用</button>
     </div>
 </div>
 
@@ -484,8 +440,8 @@
 
 <!-- 结算中心 -->
 <div class="card card-settlement-center" style="background-color: #f4f6fa;">
-    <h2 id="settlementHeader" class="collapsible-header" onclick="toggleSettlementPanel()">💰 结算中心</h2>
-    <div id="settlementContentWrapper">
+    <h2 id="settlementHeader" class="collapsible-header collapsed" onclick="toggleSettlementPanel()">💰 结算中心</h2>
+    <div id="settlementContentWrapper" class="hidden">
         <button class="btn" onclick="calculateBalances()" style="margin: 10px 0 16px;">🧮 计算并查看结算单</button>
         <div class="table-container"><div id="balancesResult" class="hidden"></div></div>
     </div>
@@ -515,97 +471,217 @@
 <div id="notification" class="notification"></div>
 
 <script>
-    // ========== 核心逻辑（与之前完全一致，此处省略以节省篇幅，但保证功能完整） ==========
     let appData = { ledgerName: "未命名", participants: [], expenses: [] };
+    let editingExpenseId = null;   // 当前正在编辑的记录ID
 
     function loadData() {
         const saved = localStorage.getItem('travelAccountingApp');
         if (saved) { try { appData = JSON.parse(saved); } catch(e){} }
-        document.getElementById('expenseDate').valueAsDate = new Date();
+        const now = new Date();
+        document.getElementById('expenseDate').valueAsDate = now;
+        document.getElementById('expenseTime').value = 
+            String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
         updateLedgerNameDisplay();
         renderAll();
         updateHintBannerVisibility();
     }
+
     function saveData() { localStorage.setItem('travelAccountingApp', JSON.stringify(appData)); }
+
     function showNotification(msg) {
-        const n = document.getElementById('notification'); n.textContent = msg; n.classList.add('show');
+        const n = document.getElementById('notification');
+        n.textContent = msg;
+        n.classList.add('show');
         setTimeout(() => n.classList.remove('show'), 2800);
     }
+
     function updateHintBannerVisibility() {
         const ok = appData.ledgerName !== '未命名' && appData.participants.length > 0;
         document.getElementById('topHintBanner').classList.toggle('hidden-banner', ok);
     }
-    function updateLedgerNameDisplay() { document.getElementById('ledgerNameDisplay').textContent = `(${appData.ledgerName || "未命名"})`; }
+
+    function updateLedgerNameDisplay() {
+        document.getElementById('ledgerNameDisplay').textContent = `(${appData.ledgerName || "未命名"})`;
+    }
+
     function setLedgerName() {
         const val = document.getElementById('ledgerNameInput').value.trim();
-        if(val) { appData.ledgerName = val; saveData(); updateLedgerNameDisplay(); updateHintBannerVisibility(); showNotification('名称已更新'); }
-        else showNotification('请输入名称');
+        if(val) {
+            appData.ledgerName = val;
+            saveData();
+            updateLedgerNameDisplay();
+            updateHintBannerVisibility();
+            showNotification('名称已更新');
+        } else showNotification('请输入名称');
         document.getElementById('ledgerNameInput').value = '';
     }
+
     function addParticipant() {
         const name = document.getElementById('newParticipant').value.trim();
         if(!name) return showNotification('请输入姓名');
         if(appData.participants.includes(name)) return showNotification('成员已存在');
-        appData.participants.push(name); saveData(); renderAll(); updateHintBannerVisibility();
+        appData.participants.push(name);
+        saveData();
+        renderAll();
+        updateHintBannerVisibility();
         document.getElementById('newParticipant').value = '';
     }
+
     function removeParticipant(name) {
-        if(appData.participants.length<=1) return showNotification('至少保留一位成员');
+        if(appData.participants.length <= 1) return showNotification('至少保留一位成员');
         if(confirm(`移除"${name}"？相关费用也会删除。`)) {
-            appData.participants = appData.participants.filter(p=>p!==name);
-            appData.expenses = appData.expenses.filter(e=>e.payer!==name && !e.splitAmong.includes(name));
-            saveData(); renderAll(); updateHintBannerVisibility();
+            appData.participants = appData.participants.filter(p => p !== name);
+            appData.expenses = appData.expenses.filter(e => e.payer !== name && !e.splitAmong.includes(name));
+            saveData();
+            renderAll();
+            updateHintBannerVisibility();
         }
     }
+
+    // 重置记录表单到初始状态（但保留日期时间为当前）
+    function resetExpenseForm() {
+        document.getElementById('expenseAmount').value = '';
+        document.getElementById('expenseDesc').value = '';
+        const now = new Date();
+        document.getElementById('expenseDate').valueAsDate = now;
+        document.getElementById('expenseTime').value = 
+            String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+        document.querySelectorAll('input[name="expenseCategory"]').forEach(r => r.checked = false);
+        // 重新生成支付人/分摊人（默认选中第一个支付人、全选分摊人）
+        renderExpenseForm();
+        editingExpenseId = null;
+        document.getElementById('addExpenseBtn').textContent = '📝 记录费用';
+    }
+
     function addExpense() {
         const amount = parseFloat(document.getElementById('expenseAmount').value);
         const payerRadio = document.querySelector('input[name="expensePayer"]:checked');
         const payer = payerRadio ? payerRadio.value : '';
         const baseDate = document.getElementById('expenseDate').value;
+        let time = document.getElementById('expenseTime').value;
+        if (!time) {
+            const now = new Date();
+            time = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+        }
         const desc = document.getElementById('expenseDesc').value.trim();
         const cat = document.querySelector('input[name="expenseCategory"]:checked')?.value;
-        const split = Array.from(document.querySelectorAll('#splitUsersCheckboxes input:checked')).map(cb=>cb.value);
+        const split = Array.from(document.querySelectorAll('#splitUsersCheckboxes input:checked')).map(cb => cb.value);
+
         if(!cat) return showNotification('请选择大类');
-        if(!amount || amount<=0) return showNotification('金额无效');
+        if(!amount || amount <= 0) return showNotification('金额无效');
         if(!baseDate) return showNotification('请选择日期');
         if(!desc) return showNotification('请填写说明');
         if(!payer) return showNotification('请选择支付人');
-        if(split.length===0) return showNotification('至少选一位分摊人');
-        const now = new Date();
-        const time = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-        appData.expenses.push({
-            id: Date.now() + Math.floor(Math.random()*1000),
-            amount, payer, description: desc, category: cat, splitAmong: split,
-            date: `${baseDate} ${time}`
-        });
-        saveData();
-        document.getElementById('expenseAmount').value = '';
-        document.getElementById('expenseDesc').value = '';
-        document.getElementById('expenseDate').valueAsDate = new Date();
-        document.querySelectorAll('input[name="expenseCategory"]').forEach(r=>r.checked=false);
-        document.querySelectorAll('#splitUsersCheckboxes input').forEach(cb=>cb.checked=true);
-        renderExpensesList();
-        if(!document.getElementById('balancesResult').classList.contains('hidden')) calculateBalances();
-        showNotification('费用已记录');
-    }
-    function deleteExpense(id) {
-        if(confirm('删除这条记录？')) {
-            appData.expenses = appData.expenses.filter(e=>e.id!==id);
-            saveData(); renderExpensesList();
-            if(!document.getElementById('balancesResult').classList.contains('hidden')) calculateBalances();
+        if(split.length === 0) return showNotification('至少选一位分摊人');
+
+        const dateStr = `${baseDate} ${time}`;
+
+        if (editingExpenseId) {
+            // 编辑模式：更新已有记录
+            const idx = appData.expenses.findIndex(e => e.id === editingExpenseId);
+            if (idx === -1) {
+                showNotification('记录不存在');
+                resetExpenseForm();
+                return;
+            }
+            appData.expenses[idx] = {
+                ...appData.expenses[idx],
+                amount,
+                payer,
+                description: desc,
+                category: cat,
+                splitAmong: split,
+                date: dateStr
+            };
+            saveData();
+            resetExpenseForm();
+            renderExpensesList();
+            if (!document.getElementById('balancesResult').classList.contains('hidden')) calculateBalances();
+            showNotification('费用已更新');
+        } else {
+            // 新增模式
+            appData.expenses.push({
+                id: Date.now() + Math.floor(Math.random() * 1000),
+                amount,
+                payer,
+                description: desc,
+                category: cat,
+                splitAmong: split,
+                date: dateStr
+            });
+            saveData();
+            // 新增后重置输入（日期时间恢复当前）
+            document.getElementById('expenseAmount').value = '';
+            document.getElementById('expenseDesc').value = '';
+            const now = new Date();
+            document.getElementById('expenseDate').valueAsDate = now;
+            document.getElementById('expenseTime').value = 
+                String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+            document.querySelectorAll('input[name="expenseCategory"]').forEach(r => r.checked = false);
+            document.querySelectorAll('#splitUsersCheckboxes input').forEach(cb => cb.checked = true);
+            renderExpensesList();
+            if (!document.getElementById('balancesResult').classList.contains('hidden')) calculateBalances();
+            showNotification('费用已记录');
         }
     }
+
+    function editExpense(id) {
+        const exp = appData.expenses.find(e => e.id === id);
+        if (!exp) return;
+        // 填入表单
+        document.getElementById('expenseAmount').value = exp.amount;
+        document.getElementById('expenseDesc').value = exp.description;
+        const [datePart, timePart] = exp.date.split(' ');
+        document.getElementById('expenseDate').value = datePart;
+        document.getElementById('expenseTime').value = timePart || '12:00';
+        // 大类
+        document.querySelectorAll('input[name="expenseCategory"]').forEach(r => {
+            r.checked = (r.value === exp.category);
+        });
+        // 支付人（确保radio已生成）
+        const payerRadio = document.querySelector(`input[name="expensePayer"][value="${exp.payer}"]`);
+        if (payerRadio) payerRadio.checked = true;
+        // 分摊人
+        document.querySelectorAll('#splitUsersCheckboxes input').forEach(cb => {
+            cb.checked = exp.splitAmong.includes(cb.value);
+        });
+        editingExpenseId = id;
+        document.getElementById('addExpenseBtn').textContent = '✏️ 更新费用';
+        // 确保表单可见
+        const form = document.getElementById('expenseFormContent');
+        const header = document.getElementById('expenseHeader');
+        if (form.classList.contains('hidden')) {
+            form.classList.remove('hidden');
+            header.classList.remove('collapsed');
+        }
+        showNotification('正在编辑，修改后点击更新费用即可');
+    }
+
+    function deleteExpense(id) {
+        if(confirm('删除这条记录？')) {
+            appData.expenses = appData.expenses.filter(e => e.id !== id);
+            saveData();
+            renderExpensesList();
+            if(!document.getElementById('balancesResult').classList.contains('hidden')) calculateBalances();
+            // 如果删除的正是正在编辑的记录，则重置表单
+            if (editingExpenseId === id) {
+                resetExpenseForm();
+            }
+        }
+    }
+
     function calculateBalances() {
         if(!appData.participants.length) return showNotification('请添加成员');
         if(!appData.expenses.length) return showNotification('暂无费用');
-        const stats = {}; appData.participants.forEach(p=>stats[p]={paid:0,consumed:0});
-        appData.expenses.forEach(e=>{
+        const stats = {};
+        appData.participants.forEach(p => stats[p] = { paid: 0, consumed: 0 });
+        appData.expenses.forEach(e => {
             stats[e.payer].paid += e.amount;
-            const share = e.amount/e.splitAmong.length;
-            e.splitAmong.forEach(p=>{ if(stats[p]) stats[p].consumed += share; });
+            const share = e.amount / e.splitAmong.length;
+            e.splitAmong.forEach(p => { if(stats[p]) stats[p].consumed += share; });
         });
         const rows = appData.participants.map(p => {
-            const { paid, consumed } = stats[p];  // ✅ 改成 stats
+            const { paid, consumed } = stats[p];
             const net = paid - consumed;
             let status = '', cls = '';
             if (net > 0.01) {
@@ -619,18 +695,25 @@
             }
             return `<tr><td>${p}</td><td class="right-cell">¥${paid.toFixed(2)}</td><td class="right-cell">¥${consumed.toFixed(2)}</td><td class="right-cell ${cls}">${status}</td></tr>`;
         }).join('');
+
         const cats = ['餐饮','交通','门票','住宿','其他'];
-        const catStats = {}; appData.participants.forEach(p=>{ catStats[p]={}; cats.forEach(c=>catStats[p][c]=0); });
-        appData.expenses.forEach(e=>{
-            const share = e.amount/e.splitAmong.length;
-            e.splitAmong.forEach(p=>{ if(catStats[p]) catStats[p][e.category] += share; });
+        const catStats = {};
+        appData.participants.forEach(p => { catStats[p] = {}; cats.forEach(c => catStats[p][c] = 0); });
+        appData.expenses.forEach(e => {
+            const share = e.amount / e.splitAmong.length;
+            e.splitAmong.forEach(p => { if(catStats[p]) catStats[p][e.category] += share; });
         });
-        const catRows = appData.participants.map(p=>{
-            let tds = `<td>${p}</td>`, total=0;
-            cats.forEach(c=>{ const amt=catStats[p][c]; total+=amt; tds+=`<td class="right-cell">${amt>0?'¥'+amt.toFixed(2):'-'}</td>`; });
-            tds+=`<td class="right-cell">¥${total.toFixed(2)}</td>`;
+        const catRows = appData.participants.map(p => {
+            let tds = `<td>${p}</td>`, total = 0;
+            cats.forEach(c => {
+                const amt = catStats[p][c];
+                total += amt;
+                tds += `<td class="right-cell">${amt > 0 ? '¥' + amt.toFixed(2) : '-'}</td>`;
+            });
+            tds += `<td class="right-cell">¥${total.toFixed(2)}</td>`;
             return `<tr>${tds}</tr>`;
         }).join('');
+
         document.getElementById('balancesResult').innerHTML = `
             <h3 style="margin:20px 0 10px;">📊 个人收支总览</h3>
             <table><thead><tr><th>姓名</th><th>垫付</th><th>消费</th><th>应结</th></tr></thead><tbody>${rows}</tbody></table>
@@ -639,85 +722,160 @@
         `;
         document.getElementById('balancesResult').classList.remove('hidden');
     }
+
     function exportToCSV() {
         if(!appData.expenses.length) return showNotification('无数据导出');
-        const csv = ['日期,金额,人均,大类,说明,付款人,分摊人'].concat(appData.expenses.map(e=>[
-            `"${e.date}"`, e.amount.toFixed(2), (e.amount/e.splitAmong.length).toFixed(2),
-            `"${e.category}"`, `"${e.description.replace(/"/g,'""')}"`, `"${e.payer}"`, `"${e.splitAmong.join('; ')}"`
+        const csv = ['日期,金额,人均,大类,说明,付款人,分摊人'].concat(appData.expenses.map(e => [
+            `"${e.date}"`,
+            e.amount.toFixed(2),
+            (e.amount / e.splitAmong.length).toFixed(2),
+            `"${e.category}"`,
+            `"${e.description.replace(/"/g,'""')}"`,
+            `"${e.payer}"`,
+            `"${e.splitAmong.join('; ')}"`
         ].join(','))).join('\n');
-        const blob = new Blob(['\uFEFF'+csv], {type:'text/csv'});
-        const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`${appData.ledgerName}_明细.csv`; a.click();
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${appData.ledgerName}_明细.csv`;
+        a.click();
         showNotification('导出成功');
     }
+
     function handleFileImport(event) {
-        const file = event.target.files[0]; if(!file) return;
+        const file = event.target.files[0];
+        if(!file) return;
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
-                const text = e.target.result.replace(/^\uFEFF/,'');
-                const lines = text.split(/\r?\n/).filter(l=>l.trim());
-                if(lines.length<2) { showNotification('空文件'); return; }
-                const valid=[]; const newM = new Set();
-                for(let i=1; i<lines.length; i++) {
-                    const vals = lines[i].split(',').map(v=>v.replace(/(^"|"$)/g,'').trim());
-                    if(vals.length<7) continue;
-                    let d = vals[0]; if(/^\d{4}-\d{2}-\d{2}$/.test(d)) d+=' 00:00';
-                    const amt = parseFloat(vals[1]); if(isNaN(amt)) continue;
-                    const cat = ['餐饮','交通','门票','住宿','其他'].includes(vals[3])?vals[3]:'其他';
+                const text = e.target.result.replace(/^\uFEFF/, '');
+                const lines = text.split(/\r?\n/).filter(l => l.trim());
+                if(lines.length < 2) { showNotification('空文件'); return; }
+                const valid = [];
+                const newM = new Set();
+                for(let i = 1; i < lines.length; i++) {
+                    const vals = lines[i].split(',').map(v => v.replace(/(^"|"$)/g, '').trim());
+                    if(vals.length < 7) continue;
+                    let d = vals[0];
+                    if(/^\d{4}-\d{2}-\d{2}$/.test(d)) d += ' 00:00';
+                    const amt = parseFloat(vals[1]);
+                    if(isNaN(amt)) continue;
+                    const cat = ['餐饮','交通','门票','住宿','其他'].includes(vals[3]) ? vals[3] : '其他';
                     if(!vals[4] || !vals[5]) continue;
-                    const split = vals[6].split(/[;,]/).map(s=>s.trim()).filter(s=>s);
+                    const split = vals[6].split(/[;,]/).map(s => s.trim()).filter(s => s);
                     if(!split.length) continue;
-                    newM.add(vals[5]); split.forEach(s=>newM.add(s));
-                    valid.push({ id: Date.now()+Math.random(), date:d, amount:amt, category:cat, description:vals[4], payer:vals[5], splitAmong:split });
+                    newM.add(vals[5]);
+                    split.forEach(s => newM.add(s));
+                    valid.push({
+                        id: Date.now() + Math.random(),
+                        date: d,
+                        amount: amt,
+                        category: cat,
+                        description: vals[4],
+                        payer: vals[5],
+                        splitAmong: split
+                    });
                 }
                 if(!valid.length) { showNotification('无有效数据'); return; }
-                const toAdd = [...newM].filter(m=>!appData.participants.includes(m));
-                if(!confirm(`导入${valid.length}条，${toAdd.length?'新增成员:'+toAdd.join(','):''} 确认？`)) return;
-                toAdd.forEach(m=>appData.participants.push(m));
-                appData.expenses.push(...valid); saveData(); renderAll(); updateHintBannerVisibility();
+                const toAdd = [...newM].filter(m => !appData.participants.includes(m));
+                if(!confirm(`导入${valid.length}条，${toAdd.length ? '新增成员:' + toAdd.join(',') : ''} 确认？`)) return;
+                toAdd.forEach(m => appData.participants.push(m));
+                appData.expenses.push(...valid);
+                saveData();
+                renderAll();
+                updateHintBannerVisibility();
                 showNotification(`导入成功${valid.length}条`);
-            } catch(err) { showNotification('导入出错'); }
-            event.target.value='';
+            } catch(err) {
+                showNotification('导入出错');
+            }
+            event.target.value = '';
         };
-        reader.readAsText(file,'UTF-8');
+        reader.readAsText(file, 'UTF-8');
     }
-    function resetAppDataWithExport() { exportToCSV(); setTimeout(()=>{ if(confirm('重置所有数据？')){ localStorage.removeItem('travelAccountingApp'); location.reload(); } },300); }
-    function toggleFilterPanel() { document.getElementById('filterPanel').classList.toggle('hidden'); }
-    function clearFilters() { ['filterDateFrom','filterDateTo','filterCategory','filterPayer','filterSplitter'].forEach(id=>document.getElementById(id).value=''); applyFilters(); }
+
+    function resetAppDataWithExport() {
+        exportToCSV();
+        setTimeout(() => {
+            if(confirm('重置所有数据？')) {
+                localStorage.removeItem('travelAccountingApp');
+                location.reload();
+            }
+        }, 300);
+    }
+
+    function toggleFilterPanel() {
+        document.getElementById('filterPanel').classList.toggle('hidden');
+    }
+
+    function clearFilters() {
+        ['filterDateFrom','filterDateTo','filterCategory','filterPayer','filterSplitter'].forEach(id => document.getElementById(id).value = '');
+        applyFilters();
+    }
+
     function updateFilterOptions() {
-        const pSel = document.getElementById('filterPayer'), sSel = document.getElementById('filterSplitter');
+        const pSel = document.getElementById('filterPayer');
+        const sSel = document.getElementById('filterSplitter');
         pSel.innerHTML = sSel.innerHTML = '<option value="">全部</option>';
-        appData.participants.forEach(p=>{ pSel.innerHTML+=`<option>${p}</option>`; sSel.innerHTML+=`<option>${p}</option>`; });
+        appData.participants.forEach(p => {
+            pSel.innerHTML += `<option>${p}</option>`;
+            sSel.innerHTML += `<option>${p}</option>`;
+        });
     }
+
     function applyFilters() {
         let filtered = [...appData.expenses];
-        const from=document.getElementById('filterDateFrom').value, to=document.getElementById('filterDateTo').value;
-        const cat=document.getElementById('filterCategory').value, payer=document.getElementById('filterPayer').value, splitter=document.getElementById('filterSplitter').value;
-        if(from) filtered = filtered.filter(e=>e.date.substring(0,10)>=from);
-        if(to) filtered = filtered.filter(e=>e.date.substring(0,10)<=to);
-        if(cat) filtered = filtered.filter(e=>e.category===cat);
-        if(payer) filtered = filtered.filter(e=>e.payer===payer);
-        if(splitter) filtered = filtered.filter(e=>e.splitAmong.includes(splitter));
+        const from = document.getElementById('filterDateFrom').value;
+        const to = document.getElementById('filterDateTo').value;
+        const cat = document.getElementById('filterCategory').value;
+        const payer = document.getElementById('filterPayer').value;
+        const splitter = document.getElementById('filterSplitter').value;
+        if(from) filtered = filtered.filter(e => e.date.substring(0,10) >= from);
+        if(to) filtered = filtered.filter(e => e.date.substring(0,10) <= to);
+        if(cat) filtered = filtered.filter(e => e.category === cat);
+        if(payer) filtered = filtered.filter(e => e.payer === payer);
+        if(splitter) filtered = filtered.filter(e => e.splitAmong.includes(splitter));
         renderExpensesTable(filtered);
     }
+
     function renderExpensesTable(exp) {
         const el = document.getElementById('expensesList');
-        if(!exp.length) { el.innerHTML='<p style="text-align:center; padding:30px; color:#7e6b8f;">✨ 暂无费用记录</p>'; return; }
-        const sorted = [...exp].sort((a,b)=>new Date(b.date)-new Date(a.date));
-        el.innerHTML = `<table><thead><tr><th>日期</th><th>金额</th><th>大类</th><th>说明</th><th>付款人</th><th>分摊人</th><th>人均</th><th></th></tr></thead><tbody>`+
-            sorted.map(e=>`<tr><td>${e.date}</td><td class="right-cell">¥${e.amount.toFixed(2)}</td><td>${e.category}</td><td>${e.description}</td><td>${e.payer}</td><td>${e.splitAmong.join(', ')}</td><td class="right-cell">¥${(e.amount/e.splitAmong.length).toFixed(2)}</td><td class="center-cell"><button class="btn btn-sm btn-danger" onclick="deleteExpense(${e.id})">删</button></td></tr>`).join('')+
+        if(!exp.length) {
+            el.innerHTML = '<p style="text-align:center; padding:30px; color:#7e6b8f;">✨ 暂无费用记录</p>';
+            return;
+        }
+        const sorted = [...exp].sort((a, b) => new Date(b.date) - new Date(a.date));
+        el.innerHTML = `<table><thead><tr><th>日期</th><th>金额</th><th>大类</th><th>说明</th><th>付款人</th><th>分摊人</th><th>人均</th><th></th></tr></thead><tbody>` +
+            sorted.map(e => `<tr>
+                <td>${e.date}</td>
+                <td class="right-cell">¥${e.amount.toFixed(2)}</td>
+                <td>${e.category}</td>
+                <td>${e.description}</td>
+                <td>${e.payer}</td>
+                <td>${e.splitAmong.join(', ')}</td>
+                <td class="right-cell">¥${(e.amount / e.splitAmong.length).toFixed(2)}</td>
+                <td class="center-cell">
+                    <span class="action-link" onclick="editExpense(${e.id})">编辑</span>
+                    <span class="action-link delete-link" onclick="deleteExpense(${e.id})">删除</span>
+                </td>
+            </tr>`).join('') +
             `</tbody></table>`;
     }
-    function renderExpensesList() { updateFilterOptions(); applyFilters(); }
+
+    function renderExpensesList() {
+        updateFilterOptions();
+        applyFilters();
+    }
+
     function renderParticipants() {
         const el = document.getElementById('participantsList');
-        el.innerHTML = appData.participants.length ? appData.participants.map(p=>`<span class="badge">${p} <button class="btn btn-sm btn-danger" onclick="removeParticipant('${p}')" style="padding:2px 8px; margin-left:6px;">×</button></span>`).join('') : '<span style="color:#a999b9;">暂无成员</span>';
+        el.innerHTML = appData.participants.length
+            ? appData.participants.map(p => `<span class="badge">${p} <button class="btn btn-sm btn-danger" onclick="removeParticipant('${p}')" style="padding:2px 8px; margin-left:6px;">×</button></span>`).join('')
+            : '<span style="color:#a999b9;">暂无成员</span>';
     }
+
     function renderExpenseForm() {
-        // 支付人单选按钮渲染
         const payerDiv = document.getElementById('expensePayerRadios');
         const splitDiv = document.getElementById('splitUsersCheckboxes');
-        
         if (appData.participants.length) {
             payerDiv.innerHTML = appData.participants.map((p, index) => `
                 <div class="radio-item">
@@ -736,11 +894,33 @@
             splitDiv.innerHTML = '<span style="color:#a999b9;">请先添加成员</span>';
         }
     }
-    function renderAll() { renderParticipants(); renderExpenseForm(); renderExpensesList(); }
-    function toggleSettingsPanel() { document.getElementById('settingsHeader').classList.toggle('collapsed'); document.getElementById('settingsPanelContent').classList.toggle('hidden'); }
-    function toggleExpenseForm() { document.getElementById('expenseHeader').classList.toggle('collapsed'); document.getElementById('expenseFormContent').classList.toggle('hidden'); }
-    function toggleExpensesPanel() { document.getElementById('expensesHeader').classList.toggle('collapsed'); document.getElementById('expensesContentWrapper').classList.toggle('hidden'); }
-    function toggleSettlementPanel() { document.getElementById('settlementHeader').classList.toggle('collapsed'); document.getElementById('settlementContentWrapper').classList.toggle('hidden'); }
+
+    function renderAll() {
+        renderParticipants();
+        renderExpenseForm();
+        renderExpensesList();
+    }
+
+    function toggleSettingsPanel() {
+        document.getElementById('settingsHeader').classList.toggle('collapsed');
+        document.getElementById('settingsPanelContent').classList.toggle('hidden');
+    }
+
+    function toggleExpenseForm() {
+        document.getElementById('expenseHeader').classList.toggle('collapsed');
+        document.getElementById('expenseFormContent').classList.toggle('hidden');
+    }
+
+    function toggleExpensesPanel() {
+        document.getElementById('expensesHeader').classList.toggle('collapsed');
+        document.getElementById('expensesContentWrapper').classList.toggle('hidden');
+    }
+
+    function toggleSettlementPanel() {
+        document.getElementById('settlementHeader').classList.toggle('collapsed');
+        document.getElementById('settlementContentWrapper').classList.toggle('hidden');
+    }
+
     window.onload = loadData;
 </script>
 </body>
