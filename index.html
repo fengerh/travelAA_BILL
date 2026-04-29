@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>旅行记账本 v20260429.1350</title>
+    <title>旅行记账本 v20260429.1520</title>
     <style>
         /* ===== 基础配色 ===== */
         :root {
@@ -390,6 +390,20 @@
 
         .amount-should-get { color: #04af2c; font-weight: 500; }
         .amount-should-pay { color: #dd2f19; font-weight: 500; }
+
+        #calcPanel button {
+            padding: 10px 0;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: #ffffff;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+        #calcPanel button:active {
+            background: #f0f0f0;
+        }
+
     </style>
 </head>
 <body>
@@ -411,7 +425,37 @@
     </h2>
     <div id="expenseFormContent">
         <div class="expense-form-grid">
-            <div class="form-group"><label>💰 金额 (¥)</label><input type="number" step="0.01" id="expenseAmount" placeholder="0.00"></div>
+            <div class="form-group">
+                <label>💰 金额 (¥)</label>
+                <div style="position: relative; display: flex; align-items: stretch;">
+                    <input type="number" step="0.01" id="expenseAmount" placeholder="0.00" style="flex:1; border-top-right-radius: 0; border-bottom-right-radius: 0;">
+                    <button type="button" id="calcToggleBtn" onclick="toggleCalc()" style="padding: 0 12px; background: var(--primary-color); border: none; color: white; font-size: 1.2em; border-radius: 0 8px 8px 0; cursor: pointer;">🧮</button>
+                    <!-- 计算器面板 -->
+                    <div id="calcPanel" class="hidden" style="position: absolute; top: 100%; left: 0; right: 0; z-index: 10; background: white; border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 12px; margin-top: 4px;">
+                        <div id="calcDisplay" style="background: #f3f4f6; padding: 10px; font-size: 1.1em; min-height: 2.5em; word-break: break-all; border-radius: 6px; margin-bottom: 8px;"></div>
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
+                            <button onclick="calcInput('7')">7</button>
+                            <button onclick="calcInput('8')">8</button>
+                            <button onclick="calcInput('9')">9</button>
+                            <button onclick="calcInput('/')" style="background: #f97316; color: white;">÷</button>
+                            <button onclick="calcInput('4')">4</button>
+                            <button onclick="calcInput('5')">5</button>
+                            <button onclick="calcInput('6')">6</button>
+                            <button onclick="calcInput('*')" style="background: #f97316; color: white;">×</button>
+                            <button onclick="calcInput('1')">1</button>
+                            <button onclick="calcInput('2')">2</button>
+                            <button onclick="calcInput('3')">3</button>
+                            <button onclick="calcInput('-')" style="background: #f97316; color: white;">−</button>
+                            <button onclick="calcInput('0')">0</button>
+                            <button onclick="calcInput('.')">.</button>
+                            <button onclick="calcClear()" style="background: #ef4444; color: white;">C</button>
+                            <button onclick="calcInput('+')" style="background: #f97316; color: white;">+</button>
+                            <button onclick="calcEqual()" style="background: #22c55e; color: white; grid-column: span 2;">=</button>
+                            <button onclick="calcFill()" style="background: var(--primary-color); color: white; grid-column: span 2;">📥 填入</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="form-group">
                 <label>📅 日期 - 时间</label>
                 <div style="display:flex; gap:8px;">
@@ -1049,6 +1093,78 @@
     }
 
     window.onload = loadData;
+
+    let calcExpr = '';
+
+    function toggleCalc() {
+        const panel = document.getElementById('calcPanel');
+        const isHidden = panel.classList.contains('hidden');
+        if (isHidden) {
+            // 如果金额输入框有值，用它初始化表达式
+            const amt = document.getElementById('expenseAmount').value;
+            calcExpr = amt || '';
+            updateCalcDisplay();
+        }
+        panel.classList.toggle('hidden');
+    }
+
+    function calcInput(char) {
+        // 防止连续输入多个运算符
+        const lastChar = calcExpr.slice(-1);
+        if ('+-*/'.includes(lastChar) && '+-*/'.includes(char)) {
+            calcExpr = calcExpr.slice(0, -1) + char;
+        } else {
+            calcExpr += char;
+        }
+        updateCalcDisplay();
+    }
+
+    function calcClear() {
+        calcExpr = '';
+        updateCalcDisplay();
+    }
+
+    function calcEqual() {
+        try {
+            // 替换乘除符号为JS可识别符号
+            let expr = calcExpr.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
+            // 安全计算，避免 eval 风险，此处信任表达式来自按钮，使用 Function 更安全
+            const result = new Function('return (' + expr + ')')();
+            if (isNaN(result) || !isFinite(result)) {
+                calcExpr = '错误';
+            } else {
+                calcExpr = parseFloat(result.toFixed(10)).toString();
+            }
+        } catch (e) {
+            calcExpr = '错误';
+        }
+        updateCalcDisplay();
+    }
+
+    function calcFill() {
+        const val = parseFloat(calcExpr);
+        if (!isNaN(val)) {
+            document.getElementById('expenseAmount').value = val;
+            document.getElementById('calcPanel').classList.add('hidden');
+            showNotification('金额已填入');
+        } else {
+            showNotification('无效结果');
+        }
+    }
+
+    function updateCalcDisplay() {
+        document.getElementById('calcDisplay').textContent = calcExpr || '0';
+    }
+
+    // 点击页面其他位置关闭计算器（可选）
+    document.addEventListener('click', function(e) {
+        const panel = document.getElementById('calcPanel');
+        const toggleBtn = document.getElementById('calcToggleBtn');
+        if (!panel.contains(e.target) && e.target !== toggleBtn && !panel.classList.contains('hidden')) {
+            panel.classList.add('hidden');
+        }
+    });
+
 </script>
 </body>
 </html>
