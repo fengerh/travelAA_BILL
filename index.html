@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>旅行记账本 v20260504.2210</title>
+    <title>旅行记账本 v20260504.2300</title>
     <style>
         /* ===== 基础配色 ===== */
         :root {
@@ -301,11 +301,11 @@
             .category-radio-list .radio-item {
                 font-size: 1em;                     /* 大类文字正常大小 */
             }
-            .radio-item input[type="radio"],
+            /* .radio-item input[type="radio"],
             .checkbox-item input[type="checkbox"] {
                 width: 12px !important;
                 height: 12px !important;
-            }
+            } */
             
             table { font-size: 0.85em; min-width: 600px; }
             th, td { padding: 12px 8px; }
@@ -329,18 +329,13 @@
 
         .radio-item input[type="radio"],
         .checkbox-item input[type="checkbox"] {
-            width: 12px !important;
-            height: 12px !important;
-            margin: 0;
-            margin-right: 4px;
-            flex-shrink: 0;
-            -webkit-appearance: none;
-            appearance: none;
-            border: 1px solid var(--border-color);   /* 边框也变细，更显小 */
-            border-radius: 50%;
-            background: white;
-            transition: all 0.1s;
+            margin: 0 6px 0 0;   /* 上右下左，缩小左右间距 */
+            margin-right: 0px;
+            margin-left: 6px;
+            flex-shrink: 10;   /* 允许更大程度缩小，优先保证文字不被挤压 */
+            /* accent-color: var(--primary-color);   只改颜色，大小交给系统 */
         }
+
         .checkbox-item input[type="checkbox"] {
             width: 14px;
             height: 14px;
@@ -359,34 +354,11 @@
         }
 
         .checkbox-item input[type="checkbox"] {
-            width: 14px !important;
-            height: 14px !important;
             margin: 0 6px 0 0;
-            flex-shrink: 0;
-            -webkit-appearance: none;
-            appearance: none;
-            border: 1px solid var(--border-color);
-            border-radius: 3px;            /* 略缩小圆角 */
-            background: white;
-            transition: all 0.1s;
-            position: relative;
-            cursor: pointer;
+            flex-shrink: 10;
+            /* accent-color: var(--primary-color);   和 radio 保持一致 */
         }
-        .checkbox-item input[type="checkbox"]:checked {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-        .checkbox-item input[type="checkbox"]:checked::after {
-            content: "✓";
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 10px;               /* 对勾也跟着变小 */
-            font-weight: bold;
-            line-height: 1;
-        }
+        /* 不需要自定义对勾了，原生会自动出现 */
 
         .amount-should-get { color: #04af2c; font-weight: 500; }
         .amount-should-pay { color: #dd2f19; font-weight: 500; }
