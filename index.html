@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>旅行记账本 v20260504.2000</title>
+    <title>旅行记账本 v20260504.2210</title>
     <style>
         /* ===== 基础配色 ===== */
         :root {
@@ -172,7 +172,7 @@
         .radio-item, .checkbox-item {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
             white-space: nowrap;
             padding: 4px 0;
         }
@@ -301,10 +301,10 @@
             .category-radio-list .radio-item {
                 font-size: 1em;                     /* 大类文字正常大小 */
             }
-            .category-radio-list input[type="radio"] {
-                width: 10px;                        /* 原为12px，稍微变小 */
-                height: 10px;
-                margin-right: 2px;
+            .radio-item input[type="radio"],
+            .checkbox-item input[type="checkbox"] {
+                width: 12px !important;
+                height: 12px !important;
             }
             
             table { font-size: 0.85em; min-width: 600px; }
@@ -329,14 +329,14 @@
 
         .radio-item input[type="radio"],
         .checkbox-item input[type="checkbox"] {
-            width: 12px;
-            height: 12px;
+            width: 12px !important;
+            height: 12px !important;
             margin: 0;
             margin-right: 4px;
             flex-shrink: 0;
             -webkit-appearance: none;
             appearance: none;
-            border: 2px solid var(--border-color);
+            border: 1px solid var(--border-color);   /* 边框也变细，更显小 */
             border-radius: 50%;
             background: white;
             transition: all 0.1s;
@@ -359,14 +359,14 @@
         }
 
         .checkbox-item input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            margin: 0 8px 0 0;
+            width: 14px !important;
+            height: 14px !important;
+            margin: 0 6px 0 0;
             flex-shrink: 0;
             -webkit-appearance: none;
             appearance: none;
-            border: 2px solid var(--border-color);
-            border-radius: 5px;
+            border: 1px solid var(--border-color);
+            border-radius: 3px;            /* 略缩小圆角 */
             background: white;
             transition: all 0.1s;
             position: relative;
@@ -383,7 +383,7 @@
             left: 50%;
             transform: translate(-50%, -50%);
             color: white;
-            font-size: 14px;
+            font-size: 10px;               /* 对勾也跟着变小 */
             font-weight: bold;
             line-height: 1;
         }
@@ -402,6 +402,13 @@
         }
         #calcPanel button:active {
             background: #f0f0f0;
+        }
+
+        /* 选中时标签文字加粗 */
+        .radio-item input[type="radio"]:checked + label,
+        .checkbox-item input[type="checkbox"]:checked + label {
+            font-weight: bold;
+            color: var(--primary-color);
         }
 
     </style>
