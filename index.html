@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>旅行记账本 v20260504.2340</title>
+    <title>旅行记账本 v20260504.2350</title>
     <style>
         /* ===== 基础配色 ===== */
         :root {
@@ -169,14 +169,16 @@
             gap: 4px 6px;
             margin-top: 6px;
         }
+       
+        /* ===== 修复单选框与标签间距（重点）===== */
         .radio-item, .checkbox-item {
             display: flex;
             align-items: center;
-            gap: 0px;
+            /* 用 gap 代替 margin 控制间距（iOS 兼容性更好） */
+            gap: 5px; /* 单选框和标签之间的距离，可根据需要调整 */
             white-space: nowrap;
             padding: 4px 0;
-            cursor: pointer;
-            text-align: left;
+            justify-content: flex-start; /* 强制内容靠左对齐，避免偏移 */
         }
         
 
@@ -276,6 +278,7 @@
             align-items: center;
         }
 
+        /* ===== 移动端专项优化（iPhone 适配）===== */
         @media (max-width: 640px) {
             body { padding: 12px 10px; }
             .card { padding: 16px 14px; margin-bottom: 16px; }
@@ -290,24 +293,19 @@
                 width: 100%;
                 max-width: 100%;
             }
-            /* .radio-list, .checkbox-list {
-                display: flex;
-                flex-wrap: nowrap;
-                gap: 6px 8px;
-            } */
             
+            
+            /* 费用大类单选框容器：允许换行，避免内容溢出覆盖 */
             .category-radio-list {
-                flex-wrap: nowrap;
-                overflow: visible;      /* 禁止横向滚动条出现 */
+                flex-wrap: nowrap; /* 改为换行（原 nowrap 容易导致重叠） */
+                gap: 6px 8px; /* 行/列间距 */
+                overflow: visible;
+                flex-shrink: 1; /* 允许容器缩小以适应屏幕 */
             }
             .category-radio-list .radio-item {
                 font-size: 1em;                     /* 大类文字正常大小 */
             }
-            /* .radio-item input[type="radio"],
-            .checkbox-item input[type="checkbox"] {
-                width: 12px !important;
-                height: 12px !important;
-            } */
+            
             
             table { font-size: 0.85em; min-width: 600px; }
             th, td { padding: 12px 8px; }
@@ -329,16 +327,11 @@
             }
         }
 
+        /* 去掉 input 原生的 margin（避免 iOS 额外间距） */
         .radio-item input[type="radio"],
         .checkbox-item input[type="checkbox"] {
-            /* margin: 0;   上右下左，缩小左右间距 */
-            margin-right: 5px;
-            /* margin-left: 0px;
-            /* flex-shrink: 10;   允许更大程度缩小，优先保证文字不被挤压 */
-            /* text-align: left; */
-            
-                        
-            /* accent-color: var(--primary-color);   只改颜色，大小交给系统 */
+            margin: 0px; /* 清除默认 margin */
+            flex-shrink: 1; /* 防止单选框被压缩 */
         }
 
         .checkbox-item input[type="checkbox"] {
