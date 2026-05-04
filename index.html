@@ -329,10 +329,11 @@
 
         .radio-item input[type="radio"],
         .checkbox-item input[type="checkbox"] {
-            margin: 0 0px 0 0;   /* 上右下左，缩小左右间距 */
-            margin-right: 0px;
+            margin: 0;   /* 上右下左，缩小左右间距 */
+            margin-right: 4px;
             margin-left: 0px;
             flex-shrink: 10;   /* 允许更大程度缩小，优先保证文字不被挤压 */
+            vertical-align: middle;        /* 关键：解决 iOS 垂直偏移 */
             /* accent-color: var(--primary-color);   只改颜色，大小交给系统 */
         }
 
