@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>旅行记账本 v20260429.1530</title>
+    <title>旅行记账本 v20260504.2000</title>
     <style>
         /* ===== 基础配色 ===== */
         :root {
@@ -816,11 +816,25 @@
             return `<tr>${tds}</tr>`;
         }).join('');
 
+        // 汇总行
+        let summaryRow = '<tr style="font-weight: bold; background-color: #f0f0f0;">';
+        // 注意：第一列文字改为“合计”或“汇总”
+        summaryRow += '<td>合计</td>';
+        let grandTotal = 0;
+        cats.forEach(c => {
+            // 计算该类的总和（所有成员平均值合计）
+            const catSum = appData.participants.reduce((sum, p) => sum + (catStats[p][c] || 0), 0);
+            grandTotal += catSum;
+            summaryRow += `<td class="right-cell">¥${catSum.toFixed(2)}</td>`;
+        });
+        summaryRow += `<td class="right-cell" style="font-weight: bold;">¥${grandTotal.toFixed(2)}</td>`;
+        summaryRow += '</tr>';
+
         document.getElementById('balancesResult').innerHTML = `
             <h3 style="margin:20px 0 10px;">📊 个人收支总览</h3>
             <table><thead><tr><th>姓名</th><th>垫付</th><th>消费</th><th>应结</th></tr></thead><tbody>${rows}</tbody></table>
             <h3 style="margin:30px 0 10px;">📂 个人消费分类</h3>
-            <table><thead><tr><th>姓名</th><th>餐饮</th><th>交通</th><th>门票</th><th>住宿</th><th>其他</th><th>合计</th></tr></thead><tbody>${catRows}</tbody></table>
+                        <table><thead><tr><th>姓名</th><th>餐饮</th><th>交通</th><th>门票</th><th>住宿</th><th>其他</th><th>合计</th></tr></thead><tbody>${catRows}${summaryRow}</tbody></table>
         `;
         document.getElementById('balancesResult').classList.remove('hidden');
     }
