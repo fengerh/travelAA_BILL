@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>旅行记账本 v20260505.0010</title>
+    <title>旅行记账本 v20260519.2330</title>
     <style>
         /* ===== 基础配色 ===== */
         :root {
@@ -112,7 +112,6 @@
         .btn-danger { background-color: var(--danger-color); }
         .btn-success { background-color: var(--success-color); }
 
-        /* 文字操作链接（用于编辑/删除） */
         .action-link {
             cursor: pointer;
             text-decoration: underline;
@@ -120,7 +119,7 @@
             margin: 0 4px;
             white-space: nowrap;
             font-size: 0.9em;
-            font-weight: normal;   /* 新增这一行 */
+            font-weight: normal;
         }
         .action-link.delete-link {
             color: #dc2626;
@@ -170,16 +169,14 @@
             margin-top: 6px;
         }
        
-        /* ===== 单选 / 复选框容器 ===== */
         .radio-item,
         .checkbox-item {
-            display: inline-flex;          /* ✅ 不用 flex，用 inline-flex */
+            display: inline-flex;
             align-items: center;
             white-space: nowrap;
             padding: 4px 0;
-            position: relative;            /* ✅ 关键 */
+            position: relative;
         }
-        
 
         @media (max-width: 480px) {
             .radio-list, .checkbox-list {
@@ -263,21 +260,12 @@
         }
         .notification.show { opacity: 0.95; }
 
-        .import-label {
-            background-color: var(--success-color);
-            border-radius: 40px;
-            padding: 10px 20px;
-            cursor: pointer;
-            display: inline-block;
-        }
-
         .flex-between {
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        /* ===== 移动端专项优化（iPhone 适配）===== */
         @media (max-width: 640px) {
             body { padding: 12px 10px; }
             .card { padding: 16px 14px; margin-bottom: 16px; }
@@ -292,20 +280,15 @@
                 width: 100%;
                 max-width: 100%;
             }
-            
-            
-            /* 费用大类单选框容器：允许换行，避免内容溢出覆盖 */
             .category-radio-list {
-                flex-wrap: wrap; /* 改为换行（原 nowrap 容易导致重叠） */
-                gap: 6px 8px; /* 行/列间距 */
+                flex-wrap: wrap;
+                gap: 6px 8px;
                 overflow: visible;
-                flex-shrink: 1; /* 允许容器缩小以适应屏幕 */
+                flex-shrink: 1;
             }
             .category-radio-list .radio-item {
-                font-size: 1em;                     /* 大类文字正常大小 */
+                font-size: 1em;
             }
-            
-            
             table { font-size: 0.85em; min-width: 600px; }
             th, td { padding: 12px 8px; }
             .btn { padding: 8px 16px; font-size: 0.9em; }
@@ -314,53 +297,57 @@
                 grid-template-columns: 1fr !important;
                 gap: 10px !important;
             }
+            #expenseCurrency {
+                width: 70px;
+                min-width: auto;
+                max-width: none;
+                flex-shrink: 0;
+            }
+            #calcToggleBtn {
+                width: 70px;
+                flex-shrink: 0;
+                font-size: 0.9em;
+                
+            }
         }
 
         @media (max-width: 380px) {
             table { min-width: 550px; }
             .badge { padding: 4px 10px; font-size: 0.8em; }
             .radio-item, .checkbox-item {
-                /* font-size: 0.82em;      稍微缩小一点保证一行放下 */
                 padding: 2px 0; 
                 gap: 2px;
             }
         }
 
-        /* ===== radio / checkbox 本身 ===== */
         .radio-item input[type="radio"],
         .checkbox-item input[type="checkbox"] {
-            position: absolute;            /* ✅ 彻底脱离文档流 */
+            position: absolute;
             left: 0;
             top: 50%;
             transform: translateY(-50%);
             margin: 0;
-            width: 16px;                  /* ✅ 强制固定尺寸 */
+            width: 16px;
             height: 16px;
             flex-shrink: 0;
         }
-
-        
         .radio-item input[type="radio"]:checked,
         .checkbox-item input[type="checkbox"]:checked {
             background-color: var(--primary-color);
             border-color: var(--primary-color);
         }
-        /* ===== 标签部分 ===== */
         .radio-item label,
         .checkbox-item label {
-            margin: 0 10px 0 0px; /* ✅ 给标签留出足够空间，避免被 radio/checkbox 覆盖 */
-            padding-left: 26px;           /* ✅ 留出 radio 的位置 */
+            margin: 0 10px 0 0px;
+            padding-left: 26px;
             white-space: nowrap;
             font-weight: normal;
             text-align: center;
         }
-
         .checkbox-item input[type="checkbox"] {
-            margin: 00px 0 0px 0px; /* ✅ 复选框左侧不留空，直接贴边 */
+            margin: 0px 0 0px 0px;
             flex-shrink: 10;
-            /* accent-color: var(--primary-color);   和 radio 保持一致 */
         }
-        /* 不需要自定义对勾了，原生会自动出现 */
 
         .amount-should-get { color: #04af2c; font-weight: 500; }
         .amount-should-pay { color: #dd2f19; font-weight: 500; }
@@ -378,12 +365,21 @@
             background: #f0f0f0;
         }
 
-        /* 选中时标签文字加粗 */
         .radio-item input[type="radio"]:checked + label,
         .checkbox-item input[type="checkbox"]:checked + label {
             font-weight: bold;
             color: var(--primary-color);
+        
         }
+
+        /* 隐藏 number 输入框的上下箭头 */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        
 
     </style>
 </head>
@@ -402,39 +398,43 @@
 <div class="card card-record-expense" style="background-color: #f4f6fa;">
     <h2 id="expenseHeader" class="collapsible-header" onclick="toggleExpenseForm()">
         📝 记录一笔
-        <!-- <span style="font-size:0.8rem; color:var(--header-color); font-weight:normal;">(可编辑日期与时间)</span> -->
     </h2>
     <div id="expenseFormContent">
         <div class="expense-form-grid">
             <div class="form-group">
-                <label>💰 金额 (¥)</label>
-                <div style="position: relative; display: flex; align-items: stretch;">
-                    <input type="number" step="0.01" id="expenseAmount" placeholder="0.00" style="flex:1; border-top-right-radius: 0; border-bottom-right-radius: 0;">
-                    <button type="button" id="calcToggleBtn" onclick="toggleCalc()" style="padding: 0 12px; background: var(--border-color); border: none; color: white; font-size: 1.2em; border-radius: 0 8px 8px 0; cursor: pointer;">🧮</button>
-                    <!-- 计算器面板 -->
-                    <div id="calcPanel" class="hidden" style="position: absolute; top: 100%; left: 0; right: 0; z-index: 10; background: white; border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 12px; margin-top: 4px;">
-                        <div id="calcDisplay" style="background: #f3f4f6; padding: 10px; font-size: 1.1em; min-height: 2.5em; word-break: break-all; border-radius: 6px; margin-bottom: 8px;"></div>
-                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
-                            <button onclick="calcInput('7')">7</button>
-                            <button onclick="calcInput('8')">8</button>
-                            <button onclick="calcInput('9')">9</button>
-                            <button onclick="calcInput('/')" style="background: #f97316; color: white;">÷</button>
-                            <button onclick="calcInput('4')">4</button>
-                            <button onclick="calcInput('5')">5</button>
-                            <button onclick="calcInput('6')">6</button>
-                            <button onclick="calcInput('*')" style="background: #f97316; color: white;">×</button>
-                            <button onclick="calcInput('1')">1</button>
-                            <button onclick="calcInput('2')">2</button>
-                            <button onclick="calcInput('3')">3</button>
-                            <button onclick="calcInput('-')" style="background: #f97316; color: white;">−</button>
-                            <button onclick="calcInput('0')">0</button>
-                            <button onclick="calcInput('.')">.</button>
-                            <button onclick="calcClear()" style="background: #ef4444; color: white;">C</button>
-                            <button onclick="calcInput('+')" style="background: #f97316; color: white;">+</button>
-                            <button onclick="calcEqual()" style="background: #22c55e; color: white; grid-column: span 2;">=</button>
-                            <button onclick="calcFill()" style="background: var(--primary-color); color: white; grid-column: span 2;">📥 填入</button>
+                <label>💰 金额</label>
+                <div style="display: flex; align-items: stretch; gap: 6px;">
+                    <select id="expenseCurrency" style="width: auto; min-width: 80px; max-width: 110px; padding: 10px 8px; border-radius: 8px; border: 1px solid var(--border-color); background: white; font-size: 16px;flex-shrink: 0;">
+                        <option value="CNY">¥ CNY</option>
+                    </select>
+                    <div style="position: relative; display: flex; align-items: stretch; flex: 1;">
+                        <input type="number" step="0.01" id="expenseAmount" placeholder="0.00" style="flex:1; border-top-right-radius: 0; border-bottom-right-radius: 0;">
+                        <button type="button" id="calcToggleBtn" onclick="toggleCalc()" style="padding: 0 12px; background: var(--border-color); border: none; color: var(--primary-color); font-size: 1em; border-radius: 0 8px 8px 0; cursor: pointer;">🧮使用计算器输入</button>
+                        <div id="calcPanel" class="hidden" style="position: absolute; top: 100%; left: 0; right: 0; z-index: 10; background: white; border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 12px; margin-top: 4px;">
+                            <div id="calcDisplay" style="background: #f3f4f6; padding: 10px; font-size: 1.1em; min-height: 2.5em; word-break: break-all; border-radius: 6px; margin-bottom: 8px;"></div>
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
+                                <button onclick="calcInput('7')">7</button>
+                                <button onclick="calcInput('8')">8</button>
+                                <button onclick="calcInput('9')">9</button>
+                                <button onclick="calcInput('/')" style="background: #f97316; color: white;">÷</button>
+                                <button onclick="calcInput('4')">4</button>
+                                <button onclick="calcInput('5')">5</button>
+                                <button onclick="calcInput('6')">6</button>
+                                <button onclick="calcInput('*')" style="background: #f97316; color: white;">×</button>
+                                <button onclick="calcInput('1')">1</button>
+                                <button onclick="calcInput('2')">2</button>
+                                <button onclick="calcInput('3')">3</button>
+                                <button onclick="calcInput('-')" style="background: #f97316; color: white;">−</button>
+                                <button onclick="calcInput('0')">0</button>
+                                <button onclick="calcInput('.')">.</button>
+                                <button onclick="calcClear()" style="background: #ef4444; color: white;">C</button>
+                                <button onclick="calcInput('+')" style="background: #f97316; color: white;">+</button>
+                                <button onclick="calcEqual()" style="background: #22c55e; color: white; grid-column: span 2;">=</button>
+                                <button onclick="calcFill()" style="background: var(--primary-color); color: white; grid-column: span 2;">📥 填入</button>
+                            </div>
                         </div>
                     </div>
+         
                 </div>
             </div>
             <div class="form-group">
@@ -460,7 +460,6 @@
         </div>
         <div style="display: flex; gap: 10px; margin-top: 8px;">
             <button id="addExpenseBtn" class="btn btn-success btn-lg" onclick="addExpense()">📝 记录费用</button>
-            <!-- 新增：取消编辑按钮，默认隐藏，编辑时显示 -->
             <button id="cancelEditBtn" class="btn btn-lg" style="background-color: #9ca3af; display: none;" onclick="cancelEdit()">取消编辑</button>
         </div>
     </div>
@@ -480,6 +479,7 @@
                 <div><label>大类</label><select id="filterCategory" onchange="applyFilters()"><option value="">全部</option><option>餐饮</option><option>交通</option><option>门票</option><option>住宿</option><option>其他</option></select></div>
                 <div><label>付款人</label><select id="filterPayer" onchange="applyFilters()"><option value="">全部</option></select></div>
                 <div><label>分摊人</label><select id="filterSplitter" onchange="applyFilters()"><option value="">全部</option></select></div>
+                <div><label>币种</label><select id="filterCurrency" onchange="applyFilters()"><option value="">全部</option></select></div>
             </div>
             <button class="btn btn-sm" onclick="clearFilters()">🧹 清空筛选</button>
         </div>
@@ -502,10 +502,48 @@
 <div class="card" style="background-color: #dde9ff;">
     <h2 id="settingsHeader" class="collapsible-header collapsed" onclick="toggleSettingsPanel()">⚙️ 设置中心</h2>
     <div id="settingsPanelContent" class="hidden">
-        <div class="form-group"><label>添加新成员</label><div style="display: flex; gap: 10px;"><input type="text" id="newParticipant" placeholder="输入姓名" style="flex:1;"><button class="btn" onclick="addParticipant()">添加</button></div></div>
-        <div style="margin: 16px 0;"><strong>当前成员:</strong> <span id="participantsList"></span></div>
+        
+        
+        <div class="form-group">
+            <label>💱 币种管理</label>
+            <div style="margin-bottom: 10px;"><strong>已添加币种：</strong> <span id="currenciesList"></span></div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;">
+                <button class="btn btn-sm" onclick="addPresetCurrency('USD','美元','$')">+ 美元</button>
+                <button class="btn btn-sm" onclick="addPresetCurrency('EUR','欧元','€')">+ 欧元</button>
+                <button class="btn btn-sm" onclick="addPresetCurrency('HKD','港元','HK$')">+ 港元</button>
+                <button class="btn btn-sm" onclick="addPresetCurrency('JPY','日元','¥')">+ 日元</button>
+                <button class="btn btn-sm" onclick="addPresetCurrency('KRW','韩元','₩')">+ 韩元</button>
+                <button class="btn btn-sm" onclick="addPresetCurrency('GBP','英镑','£')">+ 英镑</button>
+                <button class="btn btn-sm" style="background: #9ca3af;" onclick="showCustomCurrency()">✏️ 自定义</button>
+            </div>
+            <div id="currencyForm" class="hidden" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end;">
+                    <div style="flex: 1; min-width: 80px;">
+                        <label style="font-size:0.8em;">名称</label>
+                        <input type="text" id="newCurrencyName" placeholder="如 日元">
+                    </div>
+                    <div style="flex: 1; min-width: 80px;">
+                        <label style="font-size:0.8em;">代码</label>
+                        <input type="text" id="newCurrencyCode" placeholder="如 JPY" maxlength="4" style="text-transform:uppercase;">
+                    </div>
+                    <div style="flex: 1; min-width: 80px;">
+                        <label style="font-size:0.8em;">显示符号</label>
+                        <input type="text" id="newCurrencySymbol" placeholder="如 ¥" maxlength="3">
+                    </div>
+                    <div style="flex: 1; min-width: 120px;">
+                        <label style="font-size:0.8em;">1 外币 = ? 人民币</label>
+                        <input type="number" step="0.0000001" id="newCurrencyRate" placeholder="汇率">
+                    </div>
+                    <button class="btn btn-sm" onclick="addCustomCurrency()" style="flex-shrink: 0;">确认添加</button>
+                    <button class="btn btn-sm" style="background:#9ca3af;" onclick="hideCurrencyForm()">取消</button>
+                </div>
+            </div>
+        </div>
         <hr style="margin: 20px 0; border-top: 1px dashed var(--border-color);">
-        <div class="form-group"><label>设置账本名称</label><div style="display: flex; gap: 10px;"><input type="text" id="ledgerNameInput" placeholder="给账本起个名字..." style="flex:1;"><button class="btn" onclick="setLedgerName()">设置</button></div></div>
+            <div class="form-group"><label>添加新成员</label><div style="display: flex; gap: 10px;"><input type="text" id="newParticipant" placeholder="输入姓名" style="flex:1;"><button class="btn" onclick="addParticipant()">添加</button></div></div>
+            <div style="margin: 16px 0;"><strong>当前成员:</strong> <span id="participantsList"></span></div>
+        <hr style="margin: 20px 0; border-top: 1px dashed var(--border-color);">
+            <div class="form-group"><label>设置账本名称</label><div style="display: flex; gap: 10px;"><input type="text" id="ledgerNameInput" placeholder="给账本起个名字..." style="flex:1;"><button class="btn" onclick="setLedgerName()">设置</button></div></div>
         <hr style="margin: 20px 0; border-top: 1px dashed var(--border-color);">
         <div class="form-group">
             <label>数据管理</label>
@@ -522,12 +560,42 @@
 <div id="notification" class="notification"></div>
 
 <script>
-    let appData = { ledgerName: "未命名", participants: [], expenses: [] };
-    let editingExpenseId = null;   // 当前正在编辑的记录ID
+    // 初始数据结构增加 currencies 数组和费用中的 currency 字段
+    let appData = { 
+        ledgerName: "未命名", 
+        participants: [], 
+        expenses: [],
+        currencies: [
+            { code: 'CNY', name: '人民币', symbol: '¥', rate: 1 }
+        ]
+    };
+    let editingExpenseId = null;
+
+    // 辅助函数：获取币种汇率
+    function getCurrencyRate(code) {
+        const cur = appData.currencies.find(c => c.code === code);
+        return cur ? cur.rate : 1;
+    }
+    // 获取币种符号
+    function getCurrencySymbol(code) {
+        const cur = appData.currencies.find(c => c.code === code);
+        return cur ? cur.symbol : code;
+    }
 
     function loadData() {
         const saved = localStorage.getItem('travelAccountingApp');
-        if (saved) { try { appData = JSON.parse(saved); } catch(e){} }
+        if (saved) { 
+            try { 
+                appData = JSON.parse(saved); 
+                // 确保 currencies 存在且至少包含 CNY
+                if (!appData.currencies || !Array.isArray(appData.currencies)) {
+                    appData.currencies = [{ code: 'CNY', name: '人民币', symbol: '¥', rate: 1 }];
+                }
+                if (!appData.currencies.some(c => c.code === 'CNY')) {
+                    appData.currencies.unshift({ code: 'CNY', name: '人民币', symbol: '¥', rate: 1 });
+                }
+            } catch(e){}
+        }
         const now = new Date();
         document.getElementById('expenseDate').valueAsDate = now;
         document.getElementById('expenseTime').value = 
@@ -545,24 +613,6 @@
         n.textContent = msg;
         n.classList.add('show');
         setTimeout(() => n.classList.remove('show'), 2800);
-    }
-
-    function initDateTimeNowOnClear() {
-        const dateInput = document.getElementById('expenseDate');
-        const timeInput = document.getElementById('expenseTime');
-
-        function setNow() {
-            const now = new Date();
-            dateInput.valueAsDate = now;
-            timeInput.value = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
-        }
-
-        dateInput.addEventListener('input', () => {
-            if (!dateInput.value) setNow();
-        });
-        timeInput.addEventListener('input', () => {
-            if (!timeInput.value) setNow();
-        });
     }
 
     function updateHintBannerVisibility() {
@@ -608,7 +658,6 @@
         }
     }
 
-    // 重置记录表单到初始状态（保留当前日期时间，并退出编辑模式）
     function resetExpenseForm() {
         document.getElementById('expenseAmount').value = '';
         document.getElementById('expenseDesc').value = '';
@@ -617,14 +666,13 @@
         document.getElementById('expenseTime').value = 
             String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
         document.querySelectorAll('input[name="expenseCategory"]').forEach(r => r.checked = false);
-        renderExpenseForm();   // 重新生成支付人/分摊人（默认选中第一个支付人、全选分摊人）
+        document.getElementById('expenseCurrency').value = 'CNY';
+        renderExpenseForm();
         editingExpenseId = null;
         document.getElementById('addExpenseBtn').textContent = '📝 记录费用';
-        // 隐藏取消编辑按钮
         document.getElementById('cancelEditBtn').style.display = 'none';
     }
 
-    // 取消编辑，直接调用重置
     function cancelEdit() {
         resetExpenseForm();
         showNotification('已取消编辑');
@@ -643,6 +691,7 @@
         const desc = document.getElementById('expenseDesc').value.trim();
         const cat = document.querySelector('input[name="expenseCategory"]:checked')?.value;
         const split = Array.from(document.querySelectorAll('#splitUsersCheckboxes input:checked')).map(cb => cb.value);
+        const currency = document.getElementById('expenseCurrency').value;
 
         if(!cat) return showNotification('请选择大类');
         if(!amount || amount <= 0) return showNotification('金额无效');
@@ -654,17 +703,10 @@
         const dateStr = `${baseDate} ${time}`;
 
         if (editingExpenseId) {
-            // 编辑模式：先弹出确认框
-            if (!confirm('确认更新这条费用记录吗？')) {
-                return;  // 用户取消，不执行更新，保持当前编辑状态
-            }
-            // 更新已有记录
+            if (!confirm('确认更新这条费用记录吗？')) return;
             const idx = appData.expenses.findIndex(e => e.id === editingExpenseId);
-            if (idx === -1) {
-                showNotification('记录不存在');
-                resetExpenseForm();
-                return;
-            }
+            if (idx === -1) { showNotification('记录不存在'); resetExpenseForm(); return; }
+            const oldCurrency = appData.expenses[idx].currency;
             appData.expenses[idx] = {
                 ...appData.expenses[idx],
                 amount,
@@ -672,15 +714,20 @@
                 description: desc,
                 category: cat,
                 splitAmong: split,
-                date: dateStr
+                date: dateStr,
+                currency: currency
             };
+            if (oldCurrency !== currency) {
+                if (!confirm('币种已变更，请注意核对金额是否正确。确定更新吗？')) {
+                    return; // 用户取消，不更新
+                }
+            }
             saveData();
             resetExpenseForm();
             renderExpensesList();
             if (!document.getElementById('balancesResult').classList.contains('hidden')) calculateBalances();
             showNotification('费用已更新');
         } else {
-            // 新增模式
             appData.expenses.push({
                 id: Date.now() + Math.floor(Math.random() * 1000),
                 amount,
@@ -688,10 +735,10 @@
                 description: desc,
                 category: cat,
                 splitAmong: split,
-                date: dateStr
+                date: dateStr,
+                currency: currency
             });
             saveData();
-            // 新增后重置输入（日期时间恢复当前）
             document.getElementById('expenseAmount').value = '';
             document.getElementById('expenseDesc').value = '';
             const now = new Date();
@@ -700,6 +747,7 @@
                 String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
             document.querySelectorAll('input[name="expenseCategory"]').forEach(r => r.checked = false);
             document.querySelectorAll('#splitUsersCheckboxes input').forEach(cb => cb.checked = true);
+            document.getElementById('expenseCurrency').value = 'CNY';
             renderExpensesList();
             if (!document.getElementById('balancesResult').classList.contains('hidden')) calculateBalances();
             showNotification('费用已记录');
@@ -709,28 +757,23 @@
     function editExpense(id) {
         const exp = appData.expenses.find(e => e.id === id);
         if (!exp) return;
-        // 填入表单
         document.getElementById('expenseAmount').value = exp.amount;
         document.getElementById('expenseDesc').value = exp.description;
         const [datePart, timePart] = exp.date.split(' ');
         document.getElementById('expenseDate').value = datePart;
         document.getElementById('expenseTime').value = timePart || '12:00';
-        // 大类
         document.querySelectorAll('input[name="expenseCategory"]').forEach(r => {
             r.checked = (r.value === exp.category);
         });
-        // 支付人
         const payerRadio = document.querySelector(`input[name="expensePayer"][value="${exp.payer}"]`);
         if (payerRadio) payerRadio.checked = true;
-        // 分摊人
         document.querySelectorAll('#splitUsersCheckboxes input').forEach(cb => {
             cb.checked = exp.splitAmong.includes(cb.value);
         });
+        document.getElementById('expenseCurrency').value = exp.currency || 'CNY';
         editingExpenseId = id;
         document.getElementById('addExpenseBtn').textContent = '✏️ 更新费用';
-        // 显示取消编辑按钮
         document.getElementById('cancelEditBtn').style.display = 'inline-block';
-        // 确保表单可见
         const form = document.getElementById('expenseFormContent');
         const header = document.getElementById('expenseHeader');
         if (form.classList.contains('hidden')) {
@@ -746,23 +789,25 @@
             saveData();
             renderExpensesList();
             if(!document.getElementById('balancesResult').classList.contains('hidden')) calculateBalances();
-            // 如果删除的正是正在编辑的记录，则重置表单
-            if (editingExpenseId === id) {
-                resetExpenseForm();
-            }
+            if (editingExpenseId === id) resetExpenseForm();
         }
     }
 
     function calculateBalances() {
         if(!appData.participants.length) return showNotification('请添加成员');
         if(!appData.expenses.length) return showNotification('暂无费用');
+
         const stats = {};
         appData.participants.forEach(p => stats[p] = { paid: 0, consumed: 0 });
+
         appData.expenses.forEach(e => {
-            stats[e.payer].paid += e.amount;
-            const share = e.amount / e.splitAmong.length;
+            const rate = getCurrencyRate(e.currency || 'CNY');
+            const cnyAmount = e.amount * rate;
+            stats[e.payer].paid += cnyAmount;
+            const share = cnyAmount / e.splitAmong.length;
             e.splitAmong.forEach(p => { if(stats[p]) stats[p].consumed += share; });
         });
+
         const rows = appData.participants.map(p => {
             const { paid, consumed } = stats[p];
             const net = paid - consumed;
@@ -783,7 +828,9 @@
         const catStats = {};
         appData.participants.forEach(p => { catStats[p] = {}; cats.forEach(c => catStats[p][c] = 0); });
         appData.expenses.forEach(e => {
-            const share = e.amount / e.splitAmong.length;
+            const rate = getCurrencyRate(e.currency || 'CNY');
+            const cnyAmount = e.amount * rate;
+            const share = cnyAmount / e.splitAmong.length;
             e.splitAmong.forEach(p => { if(catStats[p]) catStats[p][e.category] += share; });
         });
         const catRows = appData.participants.map(p => {
@@ -797,13 +844,10 @@
             return `<tr>${tds}</tr>`;
         }).join('');
 
-        // 汇总行
         let summaryRow = '<tr style="font-weight: bold; background-color: #f0f0f0;">';
-        // 注意：第一列文字改为“合计”或“汇总”
         summaryRow += '<td>合计</td>';
         let grandTotal = 0;
         cats.forEach(c => {
-            // 计算该类的总和（所有成员平均值合计）
             const catSum = appData.participants.reduce((sum, p) => sum + (catStats[p][c] || 0), 0);
             grandTotal += catSum;
             summaryRow += `<td class="right-cell">¥${catSum.toFixed(2)}</td>`;
@@ -812,19 +856,20 @@
         summaryRow += '</tr>';
 
         document.getElementById('balancesResult').innerHTML = `
-            <h3 style="margin:20px 0 10px;">📊 个人收支总览</h3>
+            <h3 style="margin:20px 0 10px;">📊 个人收支总览（人民币）</h3>
             <table><thead><tr><th>姓名</th><th>垫付</th><th>消费</th><th>应结</th></tr></thead><tbody>${rows}</tbody></table>
-            <h3 style="margin:30px 0 10px;">📂 个人消费分类</h3>
-                        <table><thead><tr><th>姓名</th><th>餐饮</th><th>交通</th><th>门票</th><th>住宿</th><th>其他</th><th>合计</th></tr></thead><tbody>${catRows}${summaryRow}</tbody></table>
+            <h3 style="margin:30px 0 10px;">📂 个人消费分类（人民币）</h3>
+            <table><thead><tr><th>姓名</th><th>餐饮</th><th>交通</th><th>门票</th><th>住宿</th><th>其他</th><th>合计</th></tr></thead><tbody>${catRows}${summaryRow}</tbody></table>
         `;
         document.getElementById('balancesResult').classList.remove('hidden');
     }
 
     function exportToCSV() {
         if(!appData.expenses.length) return showNotification('无数据导出');
-        const csv = ['日期,金额,人均,大类,说明,付款人,分摊人'].concat(appData.expenses.map(e => [
+        const csv = ['日期,金额,币种,人均,大类,说明,付款人,分摊人'].concat(appData.expenses.map(e => [
             `"${e.date}"`,
             e.amount.toFixed(2),
+            `"${e.currency || 'CNY'}"`,
             (e.amount / e.splitAmong.length).toFixed(2),
             `"${e.category}"`,
             `"${e.description.replace(/"/g,'""')}"`,
@@ -848,6 +893,8 @@
                 const text = e.target.result.replace(/^\uFEFF/, '');
                 const lines = text.split(/\r?\n/).filter(l => l.trim());
                 if(lines.length < 2) { showNotification('空文件'); return; }
+                const header = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+                const hasCurrency = header.includes('币种');
                 const valid = [];
                 const newM = new Set();
                 for(let i = 1; i < lines.length; i++) {
@@ -857,6 +904,13 @@
                     if(/^\d{4}-\d{2}-\d{2}$/.test(d)) d += ' 00:00';
                     const amt = parseFloat(vals[1]);
                     if(isNaN(amt)) continue;
+                    let currency = 'CNY';
+                    if (hasCurrency) {
+                        const curIndex = header.indexOf('币种');
+                        if (curIndex < vals.length) {
+                            currency = vals[curIndex] || 'CNY';
+                        }
+                    }
                     const cat = ['餐饮','交通','门票','住宿','其他'].includes(vals[3]) ? vals[3] : '其他';
                     if(!vals[4] || !vals[5]) continue;
                     const split = vals[6].split(/[;,]/).map(s => s.trim()).filter(s => s);
@@ -870,7 +924,8 @@
                         category: cat,
                         description: vals[4],
                         payer: vals[5],
-                        splitAmong: split
+                        splitAmong: split,
+                        currency: currency
                     });
                 }
                 if(!valid.length) { showNotification('无有效数据'); return; }
@@ -905,17 +960,22 @@
     }
 
     function clearFilters() {
-        ['filterDateFrom','filterDateTo','filterCategory','filterPayer','filterSplitter'].forEach(id => document.getElementById(id).value = '');
+        ['filterDateFrom','filterDateTo','filterCategory','filterPayer','filterSplitter','filterCurrency'].forEach(id => document.getElementById(id).value = '');
         applyFilters();
     }
 
     function updateFilterOptions() {
         const pSel = document.getElementById('filterPayer');
         const sSel = document.getElementById('filterSplitter');
+        const cSel = document.getElementById('filterCurrency');
         pSel.innerHTML = sSel.innerHTML = '<option value="">全部</option>';
+        cSel.innerHTML = '<option value="">全部</option>';
         appData.participants.forEach(p => {
             pSel.innerHTML += `<option>${p}</option>`;
             sSel.innerHTML += `<option>${p}</option>`;
+        });
+        appData.currencies.forEach(cur => {
+            cSel.innerHTML += `<option value="${cur.code}">${cur.code} ${cur.symbol}</option>`;
         });
     }
 
@@ -926,11 +986,13 @@
         const cat = document.getElementById('filterCategory').value;
         const payer = document.getElementById('filterPayer').value;
         const splitter = document.getElementById('filterSplitter').value;
+        const currency = document.getElementById('filterCurrency').value;
         if(from) filtered = filtered.filter(e => e.date.substring(0,10) >= from);
         if(to) filtered = filtered.filter(e => e.date.substring(0,10) <= to);
         if(cat) filtered = filtered.filter(e => e.category === cat);
         if(payer) filtered = filtered.filter(e => e.payer === payer);
         if(splitter) filtered = filtered.filter(e => e.splitAmong.includes(splitter));
+        if(currency) filtered = filtered.filter(e => (e.currency || 'CNY') === currency);
         renderExpensesTable(filtered);
     }
 
@@ -941,20 +1003,24 @@
             return;
         }
         const sorted = [...exp].sort((a, b) => new Date(b.date) - new Date(a.date));
-        el.innerHTML = `<table><thead><tr><th>日期</th><th>金额</th><th>大类</th><th>说明</th><th>付款人</th><th>分摊人</th><th>人均</th><th></th></tr></thead><tbody>` +
-            sorted.map(e => `<tr>
-                <td>${e.date}</td>
-                <td class="right-cell">¥${e.amount.toFixed(2)}</td>
-                <td>${e.category}</td>
-                <td>${e.description}</td>
-                <td>${e.payer}</td>
-                <td>${e.splitAmong.join(', ')}</td>
-                <td class="right-cell">¥${(e.amount / e.splitAmong.length).toFixed(2)}</td>
-                <td class="center-cell">
-                    <span class="action-link" onclick="editExpense(${e.id})">编辑</span>
-                    <span class="action-link delete-link" onclick="deleteExpense(${e.id})">删除</span>
-                </td>
-            </tr>`).join('') +
+        el.innerHTML = `<table><thead><tr><th>日期</th><th>金额</th><th>币种</th><th>大类</th><th>说明</th><th>付款人</th><th>分摊人</th><th>人均</th><th></th></tr></thead><tbody>` +
+            sorted.map(e => {
+                const symbol = getCurrencySymbol(e.currency || 'CNY');
+                return `<tr>
+                    <td>${e.date}</td>
+                    <td class="right-cell">${symbol}${e.amount.toFixed(2)}</td>
+                    <td>${e.currency || 'CNY'}</td>
+                    <td>${e.category}</td>
+                    <td>${e.description}</td>
+                    <td>${e.payer}</td>
+                    <td>${e.splitAmong.join(', ')}</td>
+                    <td class="right-cell">${symbol}${(e.amount / e.splitAmong.length).toFixed(2)}</td>
+                    <td class="center-cell">
+                        <span class="action-link" onclick="editExpense(${e.id})">编辑</span>
+                        <span class="action-link delete-link" onclick="deleteExpense(${e.id})">删除</span>
+                    </td>
+                </tr>`;
+            }).join('') +
             `</tbody></table>`;
     }
 
@@ -978,48 +1044,20 @@
         }
     }
 
-    function renameParticipant(oldName) {
-        const newName = prompt(`将“${oldName}”更名为：`, oldName);
-        if (!newName || newName === oldName) return;
-        const trimmed = newName.trim();
-        if (!trimmed) return showNotification('名称不能为空');
-        if (appData.participants.includes(trimmed)) return showNotification('成员已存在');
-
-        // 更新参与者列表中的名字
-        const index = appData.participants.indexOf(oldName);
-        appData.participants[index] = trimmed;
-
-        // 更新所有费用中的支付人和分摊人
-        appData.expenses.forEach(e => {
-            if (e.payer === oldName) e.payer = trimmed;
-            e.splitAmong = e.splitAmong.map(name => name === oldName ? trimmed : name);
-        });
-
-        saveData();
-        renderAll();
-        // 如果当前正在编辑费用，且编辑的表单中支付人或分摊人涉及旧名字，需要刷新表单选项
-        if (editingExpenseId) {
-            // 简单处理：重新渲染表单即可（不改变已填数据，因为只是选项名字变了）
-            renderExpenseForm();
-            // 恢复编辑状态的选中项
-            const exp = appData.expenses.find(e => e.id === editingExpenseId);
-            if (exp) {
-                document.querySelectorAll('input[name="expenseCategory"]').forEach(r => {
-                    r.checked = (r.value === exp.category);
-                });
-                const payerRadio = document.querySelector(`input[name="expensePayer"][value="${exp.payer}"]`);
-                if (payerRadio) payerRadio.checked = true;
-                document.querySelectorAll('#splitUsersCheckboxes input').forEach(cb => {
-                    cb.checked = exp.splitAmong.includes(cb.value);
-                });
-            }
-        }
-        showNotification(`已更名为“${trimmed}”`);
-    }
-
     function renderExpenseForm() {
         const payerDiv = document.getElementById('expensePayerRadios');
         const splitDiv = document.getElementById('splitUsersCheckboxes');
+        const curSelect = document.getElementById('expenseCurrency');
+        // 更新币种下拉框
+        curSelect.innerHTML = '';
+        appData.currencies.forEach(cur => {
+            const option = document.createElement('option');
+            option.value = cur.code;
+            option.textContent = `${cur.symbol} ${cur.code}`;
+            curSelect.appendChild(option);
+        });
+        curSelect.value = 'CNY'; // 默认选中人民币，编辑时会被覆盖
+
         if (appData.participants.length) {
             payerDiv.innerHTML = appData.participants.map((p, index) => `
                 <div class="radio-item">
@@ -1039,8 +1077,146 @@
         }
     }
 
+    function renameParticipant(oldName) {
+        const newName = prompt(`将“${oldName}”更名为：`, oldName);
+        if (!newName || newName === oldName) return;
+        const trimmed = newName.trim();
+        if (!trimmed) return showNotification('名称不能为空');
+        if (appData.participants.includes(trimmed)) return showNotification('成员已存在');
+        const index = appData.participants.indexOf(oldName);
+        appData.participants[index] = trimmed;
+        appData.expenses.forEach(e => {
+            if (e.payer === oldName) e.payer = trimmed;
+            e.splitAmong = e.splitAmong.map(name => name === oldName ? trimmed : name);
+        });
+        saveData();
+        renderAll();
+        if (editingExpenseId) {
+            renderExpenseForm();
+            const exp = appData.expenses.find(e => e.id === editingExpenseId);
+            if (exp) {
+                document.querySelectorAll('input[name="expenseCategory"]').forEach(r => {
+                    r.checked = (r.value === exp.category);
+                });
+                const payerRadio = document.querySelector(`input[name="expensePayer"][value="${exp.payer}"]`);
+                if (payerRadio) payerRadio.checked = true;
+                document.querySelectorAll('#splitUsersCheckboxes input').forEach(cb => {
+                    cb.checked = exp.splitAmong.includes(cb.value);
+                });
+                document.getElementById('expenseCurrency').value = exp.currency || 'CNY';
+            }
+        }
+        showNotification(`已更名为“${trimmed}”`);
+    }
+
+    // 币种管理相关函数
+    function renderCurrencies() {
+        const el = document.getElementById('currenciesList');
+        const currencies = appData.currencies;
+        el.innerHTML = '';
+        currencies.forEach(cur => {
+            const badge = document.createElement('span');
+            badge.className = 'badge';
+            badge.innerHTML = `${cur.name} (${cur.symbol} ${cur.code}) 汇率: ${cur.rate}`;
+            if (cur.code !== 'CNY') {
+                badge.innerHTML += ` <span class="action-link" onclick="editCurrencyRate('${cur.code}')" style="margin-left:6px; font-size:0.85em;">调整汇率</span>`;
+                badge.innerHTML += ` <button class="btn btn-sm btn-danger" onclick="removeCurrency('${cur.code}')" style="padding:2px 8px; margin-left:4px;">×</button>`;
+            }
+            el.appendChild(badge);
+        });
+    }
+
+    function addPresetCurrency(code, name, symbol) {
+        if (appData.currencies.some(c => c.code === code)) {
+            showNotification('该币种已添加');
+            return;
+        }
+        const rate = prompt(`请输入 1 ${name} = ? 人民币 的汇率`, '0.05');
+        if (rate === null) return;
+        const numRate = parseFloat(rate);
+        if (isNaN(numRate) || numRate <= 0) {
+            showNotification('汇率无效');
+            return;
+        }
+        appData.currencies.push({ code, name, symbol, rate: numRate });
+        saveData();
+        renderAll();
+        showNotification(`${name} 已添加`);
+    }
+
+    function showCustomCurrency() {
+        document.getElementById('currencyForm').classList.remove('hidden');
+        document.getElementById('newCurrencyName').value = '';
+        document.getElementById('newCurrencyCode').value = '';
+        document.getElementById('newCurrencySymbol').value = '';
+        document.getElementById('newCurrencyRate').value = '';
+    }
+
+    function hideCurrencyForm() {
+        document.getElementById('currencyForm').classList.add('hidden');
+    }
+
+    function addCustomCurrency() {
+        const name = document.getElementById('newCurrencyName').value.trim();
+        const code = document.getElementById('newCurrencyCode').value.trim().toUpperCase();
+        const symbol = document.getElementById('newCurrencySymbol').value.trim();
+        const rate = parseFloat(document.getElementById('newCurrencyRate').value);
+
+        if (!name || !code || !symbol) return showNotification('名称、代码和符号不能为空');
+        if (code.length > 4) return showNotification('代码最多4个字符');
+        if (symbol.length > 3) return showNotification('显示符号建议不超过3个字符');
+        if (isNaN(rate) || rate <= 0) return showNotification('汇率无效');
+
+        // 检查代码是否已存在（包括预设币种）
+        if (appData.currencies.some(c => c.code === code)) {
+            showNotification('该币种代码已存在');
+            return;
+        }
+
+        appData.currencies.push({ code, name, symbol, rate });
+        saveData();
+        renderAll();
+        hideCurrencyForm();
+        showNotification(`自定义币种 ${name} (${code}) 已添加`);
+    }
+
+    function editCurrencyRate(code) {
+        const cur = appData.currencies.find(c => c.code === code);
+        if (!cur) return;
+        const newRate = prompt(`调整 ${cur.name} 汇率 (1 ${cur.name} = ? 人民币)`, cur.rate);
+        if (newRate === null) return;
+        const numRate = parseFloat(newRate);
+        if (isNaN(numRate) || numRate <= 0) {
+            showNotification('汇率无效');
+            return;
+        }
+        cur.rate = numRate;
+        saveData();
+        renderAll();
+        showNotification(`${cur.name} 汇率已更新`);
+    }
+
+    function removeCurrency(code) {
+        if (code === 'CNY') return;
+        const cur = appData.currencies.find(c => c.code === code);
+        if (!cur) return;
+        // 检查是否被使用
+        const used = appData.expenses.some(e => (e.currency || 'CNY') === code);
+        if (used) {
+            showNotification(`无法删除：${cur.name} 已被费用使用`);
+            return;
+        }
+        if (confirm(`确定删除币种 ${cur.name}？`)) {
+            appData.currencies = appData.currencies.filter(c => c.code !== code);
+            saveData();
+            renderAll();
+            showNotification(`${cur.name} 已删除`);
+        }
+    }
+
     function renderAll() {
         renderParticipants();
+        renderCurrencies();
         renderExpenseForm();
         renderExpensesList();
     }
@@ -1065,7 +1241,6 @@
         document.getElementById('settlementContentWrapper').classList.toggle('hidden');
     }
 
-    // 筛选按钮点击处理：如果费用明细面板折叠则先展开，再切换筛选面板
     function handleFilterClick() {
         const wrapper = document.getElementById('expensesContentWrapper');
         const header = document.getElementById('expensesHeader');
@@ -1076,7 +1251,6 @@
         toggleFilterPanel();
     }
 
-    // 结算计算按钮点击处理：如果结算面板折叠则先展开，再执行计算
     function handleCalculateClick() {
         const wrapper = document.getElementById('settlementContentWrapper');
         const header = document.getElementById('settlementHeader');
