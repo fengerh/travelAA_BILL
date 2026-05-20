@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>旅行记账本 v20260520.1100</title>
+    <title>旅行记账本 v20260520.1500</title>
     <style>
         /* ===== 基础配色 ===== */
         :root {
@@ -52,7 +52,7 @@
             font-size: 1.6em;
             margin: -16px -12px 16px -12px;
             padding: 16px 20px;
-            border-radius: 12px 12px 0 0;
+            border-radius: 12px 12px 12px 12px;
             font-weight: 600;
             letter-spacing: 0.3px;
             border-bottom: 1px solid #e5e7eb;
@@ -271,7 +271,7 @@
             /* overflow-x: hidden; */
             }
             .card { padding: 16px 14px; margin-bottom: 16px; }
-            h1 { font-size: 1.6em; padding: 16px 18px; margin: 0; }
+            h1 { font-size: 1.6em; padding: 16px 18px; margin: 0; margin-bottom: 12px; }
             h2 { font-size: 1.3em; margin-bottom: 12px; }
             .expense-form-grid {
                 grid-template-columns: 1fr;
@@ -306,12 +306,11 @@
                 flex-shrink: 0;
             }
 
-            /* #calcPanel 
-            {
-                /* width: calc(100vw - 56px); */
+            /* #calcPanel {
+                /* width: calc(100vw - var(--scrollbar-width, 0px)); */
                 /* margin-left: -100px; */
-                /* left: -70px; */
-                /* right: 0; */
+                /* left: 50%; */
+                /* right: auto; */
                 /* transform: translateX(-50%); 
             } */
 
@@ -422,14 +421,14 @@
     <div id="expenseFormContent">
         <div class="expense-form-grid">
             <div class="form-group">
-                <label>💰 金额</label>
+                <label>💰 币种 - 金额</label>
                 <div style="display: flex; align-items: stretch; gap: 6px;">
                     <select id="expenseCurrency" style="width: auto; min-width: 80px; max-width: 110px; padding: 10px 8px; border-radius: 8px; border: 1px solid var(--border-color); background: white; font-size: 16px;flex-shrink: 0;">
                         <option value="CNY">¥ CNY</option>
                     </select>
                     <div style="position: relative; display: flex; align-items: stretch; flex: 1;">
                         <input type="number" step="0.01" id="expenseAmount" placeholder="0.00" style="flex:1; border-top-right-radius: 0; border-bottom-right-radius: 0;">
-                        <button type="button" id="calcToggleBtn" onclick="toggleCalc()" style="padding: 0 12px; background: var(--border-color); border: none; color: var(--primary-color); font-size: 1em; border-radius: 0 8px 8px 0; cursor: pointer;">🧮计算器输入</button>
+                        <button type="button" id="calcToggleBtn" onclick="toggleCalc()" style="padding: 0 12px; background: var(--border-color); border: none; color: var(--primary-color); font-size: 1em; border-radius: 0 8px 8px 0; cursor: pointer;">🧮计算器</button>
                         <div id="calcPanel" class="hidden" style="position: absolute; top: 100%; left: 0; right: 0; z-index: 10; background: white; border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 12px; margin-top: 4px;">
                             <div id="calcDisplay" style="background: #f3f4f6; padding: 10px; font-size: 1.1em; min-height: 2.5em; word-break: break-all; border-radius: 6px; margin-bottom: 8px;"></div>
                             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
@@ -467,11 +466,11 @@
             <div class="form-group full-width">
                 <label>📂 费用大类 <span style="color: var(--danger-color);">*</span></label>
                 <div class="radio-list category-radio-list">
-                    <div class="radio-item"><input type="radio" id="cat_food" name="expenseCategory" value="餐饮"><label for="cat_food">餐饮</label></div>
-                    <div class="radio-item"><input type="radio" id="cat_transport" name="expenseCategory" value="交通"><label for="cat_transport">交通</label></div>
-                    <div class="radio-item"><input type="radio" id="cat_ticket" name="expenseCategory" value="门票"><label for="cat_ticket">门票</label></div>
-                    <div class="radio-item"><input type="radio" id="cat_accommodation" name="expenseCategory" value="住宿"><label for="cat_accommodation">住宿</label></div>
-                    <div class="radio-item"><input type="radio" id="cat_other" name="expenseCategory" value="其他"><label for="cat_other">其他</label></div>
+                    <div class="radio-item"><input type="radio" id="cat_food" name="expenseCategory" value="餐饮" title="餐饮"><label for="cat_food">食</label></div>
+                    <div class="radio-item"><input type="radio" id="cat_transport" name="expenseCategory" value="交通" title="交通"><label for="cat_transport">行</label></div>
+                    <div class="radio-item"><input type="radio" id="cat_ticket" name="expenseCategory" value="门票" title="门票"><label for="cat_ticket">票</label></div>
+                    <div class="radio-item"><input type="radio" id="cat_accommodation" name="expenseCategory" value="住宿" title="住宿"><label for="cat_accommodation">住</label></div>
+                    <div class="radio-item"><input type="radio" id="cat_other" name="expenseCategory" value="其他" title="其他"><label for="cat_other">其他</label></div>
                 </div>
             </div>
             <div class="form-group full-width"><label>📌 费用说明 <span style="color: var(--danger-color);">*</span></label><input type="text" id="expenseDesc" placeholder="例如：高铁票..."></div>
