@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>旅行记账本 v20260520.1500</title>
+    <title>旅行记账本 v20260520.1630</title>
     <style>
         /* ===== 基础配色 ===== */
         :root {
@@ -623,6 +623,24 @@
         renderAll();
         updateHintBannerVisibility();
         initDateTimeNowOnClear();
+    }
+
+    function initDateTimeNowOnClear() {
+        const dateInput = document.getElementById('expenseDate');
+        const timeInput = document.getElementById('expenseTime');
+    
+        function setNow() {
+            const now = new Date();
+            dateInput.valueAsDate = now;
+            timeInput.value = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+        }
+    
+        dateInput.addEventListener('input', () => {
+            if (!dateInput.value) setNow();
+        });
+        timeInput.addEventListener('input', () => {
+            if (!timeInput.value) setNow();
+        });
     }
 
     function saveData() { localStorage.setItem('travelAccountingApp', JSON.stringify(appData)); }
