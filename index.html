@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>旅行记账本 v20260520.0620</title>
+    <title>旅行记账本 v20260520.1100</title>
     <style>
         /* ===== 基础配色 ===== */
         :root {
@@ -267,7 +267,9 @@
         }
 
         @media (max-width: 640px) {
-            body { padding: 12px 10px; }
+            body { padding: 12px 10px; 
+            /* overflow-x: hidden; */
+            }
             .card { padding: 16px 14px; margin-bottom: 16px; }
             h1 { font-size: 1.6em; padding: 16px 18px; margin: 0; }
             h2 { font-size: 1.3em; margin-bottom: 12px; }
@@ -303,6 +305,16 @@
                 max-width: none;
                 flex-shrink: 0;
             }
+
+            /* #calcPanel 
+            {
+                /* width: calc(100vw - 56px); */
+                /* margin-left: -100px; */
+                /* left: -70px; */
+                /* right: 0; */
+                /* transform: translateX(-50%); 
+            } */
+
             /* 计算器按钮文字不换行，并适当缩小 */
             #calcToggleBtn {
                 width: auto;
@@ -417,7 +429,7 @@
                     </select>
                     <div style="position: relative; display: flex; align-items: stretch; flex: 1;">
                         <input type="number" step="0.01" id="expenseAmount" placeholder="0.00" style="flex:1; border-top-right-radius: 0; border-bottom-right-radius: 0;">
-                        <button type="button" id="calcToggleBtn" onclick="toggleCalc()" style="padding: 0 12px; background: var(--border-color); border: none; color: var(--primary-color); font-size: 1em; border-radius: 0 8px 8px 0; cursor: pointer;">🧮使用计算器输入</button>
+                        <button type="button" id="calcToggleBtn" onclick="toggleCalc()" style="padding: 0 12px; background: var(--border-color); border: none; color: var(--primary-color); font-size: 1em; border-radius: 0 8px 8px 0; cursor: pointer;">🧮计算器输入</button>
                         <div id="calcPanel" class="hidden" style="position: absolute; top: 100%; left: 0; right: 0; z-index: 10; background: white; border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 12px; margin-top: 4px;">
                             <div id="calcDisplay" style="background: #f3f4f6; padding: 10px; font-size: 1.1em; min-height: 2.5em; word-break: break-all; border-radius: 6px; margin-bottom: 8px;"></div>
                             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
@@ -513,7 +525,7 @@
         
         
         <div class="form-group">
-            <label>💱 币种管理</label>
+            <label>💱 币种管理（置顶需要优先使用的币种）</label>
             <div style="margin-bottom: 10px;"><strong>已添加币种：</strong> <span id="currenciesList"></span></div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;">
                 <button class="btn btn-sm" onclick="addPresetCurrency('USD','美元','$')">+ 美元</button>
@@ -548,13 +560,13 @@
             </div>
         </div>
         <hr style="margin: 20px 0; border-top: 1px dashed var(--border-color);">
-            <div class="form-group"><label>添加新成员</label><div style="display: flex; gap: 10px;"><input type="text" id="newParticipant" placeholder="输入姓名" style="flex:1;"><button class="btn" onclick="addParticipant()">添加</button></div></div>
+            <div class="form-group"><label>👥 添加新成员</label><div style="display: flex; gap: 10px;"><input type="text" id="newParticipant" placeholder="输入姓名" style="flex:1;"><button class="btn" onclick="addParticipant()">添加</button></div></div>
             <div style="margin: 16px 0;"><strong>当前成员:</strong> <span id="participantsList"></span></div>
         <hr style="margin: 20px 0; border-top: 1px dashed var(--border-color);">
-            <div class="form-group"><label>设置账本名称</label><div style="display: flex; gap: 10px;"><input type="text" id="ledgerNameInput" placeholder="给账本起个名字..." style="flex:1;"><button class="btn" onclick="setLedgerName()">设置</button></div></div>
+            <div class="form-group"><label>🗒️ 设置账本名称</label><div style="display: flex; gap: 10px;"><input type="text" id="ledgerNameInput" placeholder="给账本起个名字..." style="flex:1;"><button class="btn" onclick="setLedgerName()">设置</button></div></div>
         <hr style="margin: 20px 0; border-top: 1px dashed var(--border-color);">
         <div class="form-group">
-            <label>数据管理</label>
+            <label>📊 数据管理</label>
             <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
                 <label for="importFile" class="action-link" style="cursor:pointer;">📤 导入CSV</label>
                 <input type="file" id="importFile" accept=".csv" onchange="handleFileImport(event)" style="display:none;">
@@ -674,7 +686,9 @@
         document.getElementById('expenseTime').value = 
             String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
         document.querySelectorAll('input[name="expenseCategory"]').forEach(r => r.checked = false);
-        document.getElementById('expenseCurrency').value = 'CNY';
+        if (appData.currencies.length > 0) {
+            document.getElementById('expenseCurrency').value = appData.currencies[0].code;
+        }
         renderExpenseForm();
         editingExpenseId = null;
         document.getElementById('addExpenseBtn').textContent = '📝 记录费用';
@@ -873,8 +887,25 @@
     }
 
     function exportToCSV() {
-        if(!appData.expenses.length) return showNotification('无数据导出');
-        const csv = ['日期,金额,币种,人均,大类,说明,付款人,分摊人'].concat(appData.expenses.map(e => [
+        if( !appData.expenses.length) return showNotification('无数据导出');
+
+        // 先导出账本名称
+        let csv = '---账本名称---\n';
+        csv += `"${(appData.ledgerName || '未命名').replace(/"/g, '""')}"\n\n`;
+
+        // 导出币种配置
+        csv += '---币种配置---\n';
+        csv += '代码,名称,符号,汇率\n';
+        appData.currencies.forEach(cur => {
+            csv += `${cur.code},"${cur.name}","${cur.symbol}",${cur.rate}\n`;
+        });
+
+        // 空行分隔
+        csv += '\n---费用明细---\n';
+
+        // 导出费用明细
+        csv += '日期,金额,币种,人均,大类,说明,付款人,分摊人\n';
+        csv += appData.expenses.map(e => [
             `"${e.date}"`,
             e.amount.toFixed(2),
             `"${e.currency || 'CNY'}"`,
@@ -883,69 +914,163 @@
             `"${e.description.replace(/"/g,'""')}"`,
             `"${e.payer}"`,
             `"${e.splitAmong.join('; ')}"`
-        ].join(','))).join('\n');
+        ].join(',')).join('\n');
+
         const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = `${appData.ledgerName}_明细.csv`;
         a.click();
-        showNotification('导出成功');
-    }
+        showNotification('导出成功（含账本名称和币种配置）');
+    }   
 
     function handleFileImport(event) {
         const file = event.target.files[0];
-        if(!file) return;
+        if (!file) return;
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
                 const text = e.target.result.replace(/^\uFEFF/, '');
                 const lines = text.split(/\r?\n/).filter(l => l.trim());
-                if(lines.length < 2) { showNotification('空文件'); return; }
-                const header = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
-                const hasCurrency = header.includes('币种');
-                const valid = [];
-                const newM = new Set();
-                for(let i = 1; i < lines.length; i++) {
-                    const vals = lines[i].split(',').map(v => v.replace(/(^"|"$)/g, '').trim());
-                    if(vals.length < 7) continue;
-                    let d = vals[0];
-                    if(/^\d{4}-\d{2}-\d{2}$/.test(d)) d += ' 00:00';
-                    const amt = parseFloat(vals[1]);
-                    if(isNaN(amt)) continue;
-                    let currency = 'CNY';
-                    if (hasCurrency) {
-                        const curIndex = header.indexOf('币种');
-                        if (curIndex < vals.length) {
-                            currency = vals[curIndex] || 'CNY';
+                if (lines.length < 2) { showNotification('空文件'); return; }
+
+                // 1. 解析账本名称（如果存在）
+                const ledgerNameIndex = lines.findIndex(l => l.startsWith('---账本名称---'));
+                let importedLedgerName = null;
+                if (ledgerNameIndex >= 0 && lines.length > ledgerNameIndex + 1) {
+                    const nameLine = lines[ledgerNameIndex + 1].trim();
+                    if (nameLine) {
+                        // 去掉可能包裹的双引号
+                        importedLedgerName = nameLine.replace(/(^"|"$)/g, '').replace(/""/g, '"');
+                    }
+                }
+
+                // 2. 解析币种配置（如果存在）
+                const currencyStartIndex = lines.findIndex(l => l.startsWith('---币种配置---'));
+                const expenseStartIndex = lines.findIndex(l => l.startsWith('---费用明细---'));
+
+                let importedCurrencies = [];
+                let expenseLines = [];
+                let hasCurrency = false;
+                let headerLine = '';
+
+                if (currencyStartIndex >= 0 && expenseStartIndex > currencyStartIndex) {
+                    // 新格式：包含币种配置块
+                    for (let i = currencyStartIndex + 2; i < expenseStartIndex; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue;
+                        const vals = line.split(',').map(v => v.replace(/(^"|"$)/g, '').trim());
+                        if (vals.length >= 4) {
+                            const code = vals[0];
+                            const name = vals[1];
+                            const symbol = vals[2];
+                            const rate = parseFloat(vals[3]);
+                            if (code && name && symbol && !isNaN(rate) && rate > 0) {
+                                importedCurrencies.push({ code, name, symbol, rate });
+                            }
                         }
                     }
-                    const cat = ['餐饮','交通','门票','住宿','其他'].includes(vals[3]) ? vals[3] : '其他';
-                    if(!vals[4] || !vals[5]) continue;
-                    const split = vals[6].split(/[;,]/).map(s => s.trim()).filter(s => s);
-                    if(!split.length) continue;
-                    newM.add(vals[5]);
+                    // 费用明细表头
+                    headerLine = lines[expenseStartIndex + 1] || '';
+                    expenseLines = lines.slice(expenseStartIndex + 2);
+                } else {
+                    // 旧格式：无币种配置块，直接作为费用明细
+                    headerLine = lines[0];
+                    expenseLines = lines.slice(1);
+                }
+
+                if (headerLine) {
+                    const headerFields = headerLine.split(',').map(h => h.replace(/"/g, '').trim());
+                    hasCurrency = headerFields.includes('币种');
+                }
+
+                // 3. 恢复账本名称
+                if (importedLedgerName) {
+                    if (appData.ledgerName === '未命名' || appData.ledgerName === '') {
+                        appData.ledgerName = importedLedgerName;
+                    } else if (appData.ledgerName !== importedLedgerName) {
+                        if (confirm(`导入的账本名称为“${importedLedgerName}”，当前为“${appData.ledgerName}”，是否覆盖？`)) {
+                            appData.ledgerName = importedLedgerName;
+                        }
+                    }
+                }
+
+                // 4. 合并币种：本地已有的不覆盖
+                importedCurrencies.forEach(ic => {
+                    if (!appData.currencies.some(c => c.code === ic.code)) {
+                        appData.currencies.push(ic);
+                    }
+                });
+
+                // 5. 解析费用明细
+                const valid = [];
+                const newM = new Set();
+
+                for (let i = 0; i < expenseLines.length; i++) {
+                    const line = expenseLines[i].trim();
+                    if (!line) continue;
+                    const vals = line.split(',').map(v => v.replace(/(^"|"$)/g, '').trim());
+                    if (vals.length < (hasCurrency ? 8 : 7)) continue;
+
+                    let d = vals[0];
+                    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) d += ' 00:00';
+                    const amt = parseFloat(vals[1]);
+                    if (isNaN(amt)) continue;
+
+                    let currency = 'CNY';
+                    let catIndex, descIndex, payerIndex, splitIndex;
+
+                    if (hasCurrency) {
+                        currency = vals[2] || 'CNY';
+                        catIndex = 4;
+                        descIndex = 5;
+                        payerIndex = 6;
+                        splitIndex = 7;
+                    } else {
+                        catIndex = 3;
+                        descIndex = 4;
+                        payerIndex = 5;
+                        splitIndex = 6;
+                    }
+
+                    const cat = ['餐饮', '交通', '门票', '住宿', '其他'].includes(vals[catIndex]) ? vals[catIndex] : '其他';
+                    if (!vals[descIndex] || !vals[payerIndex]) continue;
+                    const split = vals[splitIndex].split(/[;,]/).map(s => s.trim()).filter(s => s);
+                    if (!split.length) continue;
+
+                    newM.add(vals[payerIndex]);
                     split.forEach(s => newM.add(s));
+
                     valid.push({
                         id: Date.now() + Math.random(),
                         date: d,
                         amount: amt,
                         category: cat,
-                        description: vals[4],
-                        payer: vals[5],
+                        description: vals[descIndex],
+                        payer: vals[payerIndex],
                         splitAmong: split,
                         currency: currency
                     });
                 }
-                if(!valid.length) { showNotification('无有效数据'); return; }
+
+                if (!valid.length) { showNotification('无有效费用数据'); return; }
                 const toAdd = [...newM].filter(m => !appData.participants.includes(m));
-                if(!confirm(`导入${valid.length}条，${toAdd.length ? '新增成员:' + toAdd.join(',') : ''} 确认？`)) return;
+                const msg = `导入${valid.length}条费用` +
+                    (importedCurrencies.length ? `，恢复${importedCurrencies.length}种币种` : '') +
+                    (importedLedgerName ? `，账本名称“${importedLedgerName}”` : '') +
+                    (toAdd.length ? `，新增成员:${toAdd.join(',')}` : '') +
+                    `\n⚠️ 导入操作为新增数据，不会覆盖原有记录。\n确认继续？`;
+                if (!confirm(msg)) return;
+
                 toAdd.forEach(m => appData.participants.push(m));
                 appData.expenses.push(...valid);
                 saveData();
+                updateLedgerNameDisplay();
                 renderAll();
                 updateHintBannerVisibility();
-                showNotification(`导入成功${valid.length}条`);
-            } catch(err) {
+                showNotification(`导入成功：${valid.length}条费用${importedCurrencies.length ? '，' + importedCurrencies.length + '种币种已恢复' : ''}${importedLedgerName ? '，账本名称已恢复' : ''}`);
+
+            } catch (err) {
                 showNotification('导入出错');
             }
             event.target.value = '';
@@ -1066,6 +1191,14 @@
         });
         curSelect.value = 'CNY'; // 默认选中人民币，编辑时会被覆盖
 
+        // 改为：
+        // 默认选中数组第一个币种（即置顶币种，若没有置顶则第一个就是 CNY）
+        if (appData.currencies.length > 0) {
+            curSelect.value = appData.currencies[0].code;
+        }
+
+
+
         if (appData.participants.length) {
             payerDiv.innerHTML = appData.participants.map((p, index) => `
                 <div class="radio-item">
@@ -1122,16 +1255,41 @@
         const el = document.getElementById('currenciesList');
         const currencies = appData.currencies;
         el.innerHTML = '';
-        currencies.forEach(cur => {
+        currencies.forEach((cur, index) => {
             const badge = document.createElement('span');
             badge.className = 'badge';
-            badge.innerHTML = `${cur.name} (${cur.symbol} ${cur.code}) 汇率: ${cur.rate}`;
+            // 优先币种（数组第一位）特殊样式
+            if (index === 0) {
+                badge.style.backgroundColor = '#dbeafe';   // 浅蓝背景
+                badge.style.fontWeight = 'bold';
+                badge.style.border = '1px solid #60a5fa';
+            }
+            badge.innerHTML = `${cur.name} (${cur.symbol} ${cur.code}) 汇率: ${cur.rate.toFixed(7)}`;
+            
+            // 置顶链接
+            badge.innerHTML += ` <span class="action-link" onclick="setPriorityCurrency('${cur.code}')" style="margin-left:6px; font-size:0.85em;">⭐ 置顶</span>`;
+            
             if (cur.code !== 'CNY') {
                 badge.innerHTML += ` <span class="action-link" onclick="editCurrencyRate('${cur.code}')" style="margin-left:6px; font-size:0.85em;">调整汇率</span>`;
                 badge.innerHTML += ` <button class="btn btn-sm btn-danger" onclick="removeCurrency('${cur.code}')" style="padding:2px 8px; margin-left:4px;">×</button>`;
             }
             el.appendChild(badge);
         });
+    }
+
+    function setPriorityCurrency(code) {
+        const idx = appData.currencies.findIndex(c => c.code === code);
+        if (idx === -1) return;
+        if (idx === 0) {
+            showNotification('该币种已在最前');
+            return;
+        }
+        // 将该币种移到数组最前面
+        const [target] = appData.currencies.splice(idx, 1);
+        appData.currencies.unshift(target);
+        saveData();
+        renderAll();
+        showNotification(`${target.name} 已置顶`);
     }
 
     function addPresetCurrency(code, name, symbol) {
