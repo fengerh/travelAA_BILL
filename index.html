@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>旅行记账本 v20260520.1630</title>
+    <title>旅行记账本 v20260524.2010</title>
     <style>
         /* ===== 基础配色 ===== */
         :root {
@@ -155,12 +156,80 @@
             box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.15);
         }
 
+        /* ===== PC网页端连续并排布局 ===== */
         .expense-form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+            display: flex;
+            flex-wrap: wrap;
             gap: 12px 18px;
         }
-        .full-width { grid-column: span 2; }
+        .expense-form-grid .form-group {
+            flex: 1;
+            min-width: calc(50% - 9px); /* 默认两列连续并排 */
+        }
+        .expense-form-grid .full-width {
+            flex: 0 0 100%;
+            min-width: 100%; /* 占满整行 */
+        }
+
+        /* ===== 拼接大输入框样式 ===== */
+        .combined-amount-box {
+            display: flex;
+            align-items: stretch;
+            height: 42px; /* 👈 同样强制锁死高度为 42px，与右边绝对一致 */
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: #ffffff;
+            overflow: visible; /* 允许内部计算器弹窗溢出显示 */
+        }
+        .combined-amount-box:focus-within {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.15);
+        }
+        .combined-amount-box select {
+            width: auto;
+            min-width: 85px;
+            max-width: 110px;
+            border: none !important;
+            border-right: 1px solid var(--border-color) !important;
+            border-radius: 8px 0 0 8px !important;
+            padding: 10px 8px;
+            background: #f8fafc;
+            flex-shrink: 0;
+        }
+        .combined-amount-box select:focus {
+            box-shadow: none !important;
+        }
+        .combined-amount-box .input-container {
+            position: relative;
+            display: flex;
+            align-items: stretch;
+            flex: 1;
+        }
+        .combined-amount-box input[type="number"] {
+            flex: 1;
+            border: none !important;
+            border-radius: 0 !important;
+            padding: 10px 12px;
+        }
+        .combined-amount-box input[type="number"]:focus {
+            box-shadow: none !important;
+        }
+        .combined-amount-box #calcToggleBtn {
+            padding: 0 14px;
+            background: #f1f5f9;
+            border: none;
+            border-left: 1px solid var(--border-color);
+            color: var(--primary-color);
+            font-size: 0.95em;
+            border-radius: 0 8px 8px 0;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: background 0.1s;
+        }
+        .combined-amount-box #calcToggleBtn:hover {
+            background: #e2e8f0;
+        }
 
         .radio-list, .checkbox-list {
             display: flex;
@@ -266,18 +335,20 @@
             align-items: center;
         }
 
+        /* ===== 移动端响应式断点（换行显示布局） ===== */
         @media (max-width: 640px) {
-            body { padding: 12px 10px; 
-            /* overflow-x: hidden; */
-            }
+            body { padding: 12px 10px; }
             .card { padding: 16px 14px; margin-bottom: 16px; }
             h1 { font-size: 1.5em; padding: 10px 10px; margin: 0; margin-bottom: 12px; }
             h2 { font-size: 1.3em; margin-bottom: 12px; }
-            .expense-form-grid {
-                grid-template-columns: 1fr;
-                gap: 8px;
+            
+            /* 移动端变成单列强制换行显示 */
+            .expense-form-grid .form-group {
+                flex: 0 0 100%;
+                min-width: 100%;
+                margin-bottom: 12px;
             }
-            .full-width { grid-column: span 1; }
+            
             input[type="date"], input[type="time"] {
                 width: 100%;
                 max-width: 100%;
@@ -299,35 +370,6 @@
                 grid-template-columns: 1fr !important;
                 gap: 10px !important;
             }
-            #expenseCurrency {
-                width: 70px;
-                min-width: auto;
-                max-width: none;
-                flex-shrink: 0;
-            }
-
-            /* #calcPanel {
-                /* width: calc(100vw - var(--scrollbar-width, 0px)); */
-                /* margin-left: -100px; */
-                /* left: 50%; */
-                /* right: auto; */
-                /* transform: translateX(-50%); 
-            } */
-
-            /* 计算器按钮文字不换行，并适当缩小 */
-            #calcToggleBtn {
-                width: auto;
-                flex-shrink: 0;
-                font-size: 0.9em;
-                white-space: nowrap;
-                padding: 10px 8px;
-                min-width: auto;
-            }
-            /* 确保金额行（币种+输入框+按钮）不换行 */
-            #amountRow {
-                flex-wrap: nowrap;
-            }
-
         }
 
         @media (max-width: 380px) {
@@ -398,14 +440,43 @@
             margin: 0;
         }
 
-        
 
+        /* ===== 拼接日期时间框样式 ===== */
+        .combined-datetime-box {
+            display: flex;
+            align-items: stretch;
+            height: 42px; /* 锁死高度，与左边完全等高 */
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: #ffffff;
+            overflow: hidden; /* 确保内部组件的圆角不溢出 */
+        }
+        .combined-datetime-box:focus-within {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.15);
+        }
+        .combined-datetime-box input[type="date"],
+        .combined-datetime-box input[type="time"] {
+            flex: 1;
+            width: 50%; /* 两者平分大框 */
+            height: 100%;
+            border: none !important; /* 移除原生边框 */
+            border-radius: 0 !important;
+            padding: 0 12px;
+            background: transparent;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        /* 在日期和时间中间加一条垂直分割线 */
+        .combined-datetime-box input[type="date"] {
+            border-right: 1px solid var(--border-color) !important;
+        }
     </style>
 </head>
 <body>
 
 <div id="topHintBanner" class="hint-banner">
-    ⚡ 请在设置中心添加成员、设置账本名称，然后开始记账。<br>本账本支持单机存储明细，可导出导入数据。
+    ⚡ 请在设置中心添加币种、汇率、成员、账本名称。<br>本账本支持单机存储明细，可导出导入数据。
 </div>
 
 <h1 class="main-title" style="color: var(--primary-color);">
@@ -420,15 +491,17 @@
     </h2>
     <div id="expenseFormContent">
         <div class="expense-form-grid">
+            
+            <!-- 统一合成的大金额框 -->
             <div class="form-group">
                 <label>💰 币种 - 金额</label>
-                <div style="display: flex; align-items: stretch; gap: 6px;">
-                    <select id="expenseCurrency" style="width: auto; min-width: 80px; max-width: 110px; padding: 10px 8px; border-radius: 8px; border: 1px solid var(--border-color); background: white; font-size: 16px;flex-shrink: 0;">
+                <div class="combined-amount-box">
+                    <select id="expenseCurrency">
                         <option value="CNY">¥ CNY</option>
                     </select>
-                    <div style="position: relative; display: flex; align-items: stretch; flex: 1;">
-                        <input type="number" step="0.01" id="expenseAmount" placeholder="0.00" style="flex:1; border-top-right-radius: 0; border-bottom-right-radius: 0;">
-                        <button type="button" id="calcToggleBtn" onclick="toggleCalc()" style="padding: 0 12px; background: var(--border-color); border: none; color: var(--primary-color); font-size: 1em; border-radius: 0 8px 8px 0; cursor: pointer;">🧮计算器</button>
+                    <div class="input-container">
+                        <input type="number" step="0.01" id="expenseAmount" placeholder="0.00">
+                        <button type="button" id="calcToggleBtn" onclick="toggleCalc()">🧮计算器</button>
                         <div id="calcPanel" class="hidden" style="position: absolute; top: 100%; left: 0; right: 0; z-index: 10; background: white; border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 12px; margin-top: 4px;">
                             <div id="calcDisplay" style="background: #f3f4f6; padding: 10px; font-size: 1.1em; min-height: 2.5em; word-break: break-all; border-radius: 6px; margin-bottom: 8px;"></div>
                             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
@@ -453,16 +526,17 @@
                             </div>
                         </div>
                     </div>
-         
                 </div>
             </div>
+
             <div class="form-group">
                 <label>📅 日期 - 时间</label>
-                <div style="display:flex; gap:8px;">
-                    <input type="date" id="expenseDate" style="flex:1;">
-                    <input type="time" id="expenseTime" style="flex:1;">
+                <div class="combined-datetime-box">
+                    <input type="date" id="expenseDate">
+                    <input type="time" id="expenseTime">
                 </div>
             </div>
+
             <div class="form-group full-width">
                 <label>📂 费用大类 <span style="color: var(--danger-color);">*</span></label>
                 <div class="radio-list category-radio-list">
@@ -477,9 +551,10 @@
             <div class="form-group"><label>👤 支付人</label><div class="radio-list" id="expensePayerRadios"></div> </div>
             <div class="form-group full-width"><label>👥 费用分摊给</label><div class="checkbox-list" id="splitUsersCheckboxes"></div></div>
         </div>
-        <div style="display: flex; gap: 10px; margin-top: 8px;">
-            <button id="addExpenseBtn" class="btn btn-success btn-lg" onclick="addExpense()">📝 记录费用</button>
+        <!-- 👈 核心修改：加入了 justify-content: flex-end; 让内部按钮整体向右靠齐 -->
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px;">
             <button id="cancelEditBtn" class="btn btn-lg" style="background-color: #9ca3af; display: none;" onclick="cancelEdit()">取消编辑</button>
+            <button id="addExpenseBtn" class="btn btn-success btn-lg" onclick="addExpense()">📝 记录费用</button>
         </div>
     </div>
 </div>
@@ -521,7 +596,6 @@
 <div class="card" style="background-color: #dde9ff;">
     <h2 id="settingsHeader" class="collapsible-header collapsed" onclick="toggleSettingsPanel()">⚙️ 设置中心</h2>
     <div id="settingsPanelContent" class="hidden">
-        
         
         <div class="form-group">
             <label>💱 币种管理（置顶需要优先使用的币种）</label>
@@ -579,7 +653,6 @@
 <div id="notification" class="notification"></div>
 
 <script>
-    // 初始数据结构增加 currencies 数组和费用中的 currency 字段
     let appData = { 
         ledgerName: "未命名", 
         participants: [], 
@@ -590,12 +663,10 @@
     };
     let editingExpenseId = null;
 
-    // 辅助函数：获取币种汇率
     function getCurrencyRate(code) {
         const cur = appData.currencies.find(c => c.code === code);
         return cur ? cur.rate : 1;
     }
-    // 获取币种符号
     function getCurrencySymbol(code) {
         const cur = appData.currencies.find(c => c.code === code);
         return cur ? cur.symbol : code;
@@ -606,7 +677,6 @@
         if (saved) { 
             try { 
                 appData = JSON.parse(saved); 
-                // 确保 currencies 存在且至少包含 CNY
                 if (!appData.currencies || !Array.isArray(appData.currencies)) {
                     appData.currencies = [{ code: 'CNY', name: '人民币', symbol: '¥', rate: 1 }];
                 }
@@ -628,13 +698,13 @@
     function initDateTimeNowOnClear() {
         const dateInput = document.getElementById('expenseDate');
         const timeInput = document.getElementById('expenseTime');
-    
+
         function setNow() {
             const now = new Date();
             dateInput.valueAsDate = now;
             timeInput.value = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
         }
-    
+
         dateInput.addEventListener('input', () => {
             if (!dateInput.value) setNow();
         });
@@ -758,7 +828,7 @@
             };
             if (oldCurrency !== currency) {
                 if (!confirm('币种已变更，请注意核对金额是否正确。确定更新吗？')) {
-                    return; // 用户取消，不更新
+                    return;
                 }
             }
             saveData();
@@ -906,21 +976,17 @@
     function exportToCSV() {
         if( !appData.expenses.length) return showNotification('无数据导出');
 
-        // 先导出账本名称
         let csv = '---账本名称---\n';
         csv += `"${(appData.ledgerName || '未命名').replace(/"/g, '""')}"\n\n`;
 
-        // 导出币种配置
         csv += '---币种配置---\n';
         csv += '代码,名称,符号,汇率\n';
         appData.currencies.forEach(cur => {
             csv += `${cur.code},"${cur.name}","${cur.symbol}",${cur.rate}\n`;
         });
 
-        // 空行分隔
         csv += '\n---费用明细---\n';
 
-        // 导出费用明细
         csv += '日期,金额,币种,人均,大类,说明,付款人,分摊人\n';
         csv += appData.expenses.map(e => [
             `"${e.date}"`,
@@ -951,18 +1017,15 @@
                 const lines = text.split(/\r?\n/).filter(l => l.trim());
                 if (lines.length < 2) { showNotification('空文件'); return; }
 
-                // 1. 解析账本名称（如果存在）
                 const ledgerNameIndex = lines.findIndex(l => l.startsWith('---账本名称---'));
                 let importedLedgerName = null;
                 if (ledgerNameIndex >= 0 && lines.length > ledgerNameIndex + 1) {
                     const nameLine = lines[ledgerNameIndex + 1].trim();
                     if (nameLine) {
-                        // 去掉可能包裹的双引号
                         importedLedgerName = nameLine.replace(/(^"|"$)/g, '').replace(/""/g, '"');
                     }
                 }
 
-                // 2. 解析币种配置（如果存在）
                 const currencyStartIndex = lines.findIndex(l => l.startsWith('---币种配置---'));
                 const expenseStartIndex = lines.findIndex(l => l.startsWith('---费用明细---'));
 
@@ -972,7 +1035,6 @@
                 let headerLine = '';
 
                 if (currencyStartIndex >= 0 && expenseStartIndex > currencyStartIndex) {
-                    // 新格式：包含币种配置块
                     for (let i = currencyStartIndex + 2; i < expenseStartIndex; i++) {
                         const line = lines[i].trim();
                         if (!line) continue;
@@ -987,11 +1049,9 @@
                             }
                         }
                     }
-                    // 费用明细表头
                     headerLine = lines[expenseStartIndex + 1] || '';
                     expenseLines = lines.slice(expenseStartIndex + 2);
                 } else {
-                    // 旧格式：无币种配置块，直接作为费用明细
                     headerLine = lines[0];
                     expenseLines = lines.slice(1);
                 }
@@ -1001,7 +1061,6 @@
                     hasCurrency = headerFields.includes('币种');
                 }
 
-                // 3. 恢复账本名称
                 if (importedLedgerName) {
                     if (appData.ledgerName === '未命名' || appData.ledgerName === '') {
                         appData.ledgerName = importedLedgerName;
@@ -1012,14 +1071,12 @@
                     }
                 }
 
-                // 4. 合并币种：本地已有的不覆盖
                 importedCurrencies.forEach(ic => {
                     if (!appData.currencies.some(c => c.code === ic.code)) {
                         appData.currencies.push(ic);
                     }
                 });
 
-                // 5. 解析费用明细
                 const valid = [];
                 const newM = new Set();
 
@@ -1198,7 +1255,7 @@
         const payerDiv = document.getElementById('expensePayerRadios');
         const splitDiv = document.getElementById('splitUsersCheckboxes');
         const curSelect = document.getElementById('expenseCurrency');
-        // 更新币种下拉框
+        
         curSelect.innerHTML = '';
         appData.currencies.forEach(cur => {
             const option = document.createElement('option');
@@ -1206,15 +1263,10 @@
             option.textContent = `${cur.symbol} ${cur.code}`;
             curSelect.appendChild(option);
         });
-        curSelect.value = 'CNY'; // 默认选中人民币，编辑时会被覆盖
 
-        // 改为：
-        // 默认选中数组第一个币种（即置顶币种，若没有置顶则第一个就是 CNY）
         if (appData.currencies.length > 0) {
             curSelect.value = appData.currencies[0].code;
         }
-
-
 
         if (appData.participants.length) {
             payerDiv.innerHTML = appData.participants.map((p, index) => `
@@ -1267,7 +1319,6 @@
         showNotification(`已更名为“${trimmed}”`);
     }
 
-    // 币种管理相关函数
     function renderCurrencies() {
         const el = document.getElementById('currenciesList');
         const currencies = appData.currencies;
@@ -1275,15 +1326,13 @@
         currencies.forEach((cur, index) => {
             const badge = document.createElement('span');
             badge.className = 'badge';
-            // 优先币种（数组第一位）特殊样式
             if (index === 0) {
-                badge.style.backgroundColor = '#dbeafe';   // 浅蓝背景
+                badge.style.backgroundColor = '#dbeafe';
                 badge.style.fontWeight = 'bold';
                 badge.style.border = '1px solid #60a5fa';
             }
             badge.innerHTML = `${cur.name} (${cur.symbol} ${cur.code}) 汇率: ${cur.rate.toFixed(7)}`;
             
-            // 置顶链接
             badge.innerHTML += ` <span class="action-link" onclick="setPriorityCurrency('${cur.code}')" style="margin-left:6px; font-size:0.85em;">⭐ 置顶</span>`;
             
             if (cur.code !== 'CNY') {
@@ -1301,7 +1350,6 @@
             showNotification('该币种已在最前');
             return;
         }
-        // 将该币种移到数组最前面
         const [target] = appData.currencies.splice(idx, 1);
         appData.currencies.unshift(target);
         saveData();
@@ -1350,7 +1398,6 @@
         if (symbol.length > 3) return showNotification('显示符号建议不超过3个字符');
         if (isNaN(rate) || rate <= 0) return showNotification('汇率无效');
 
-        // 检查代码是否已存在（包括预设币种）
         if (appData.currencies.some(c => c.code === code)) {
             showNotification('该币种代码已存在');
             return;
@@ -1383,7 +1430,6 @@
         if (code === 'CNY') return;
         const cur = appData.currencies.find(c => c.code === code);
         if (!cur) return;
-        // 检查是否被使用
         const used = appData.expenses.some(e => (e.currency || 'CNY') === code);
         if (used) {
             showNotification(`无法删除：${cur.name} 已被费用使用`);
@@ -1452,7 +1498,6 @@
         const panel = document.getElementById('calcPanel');
         const isHidden = panel.classList.contains('hidden');
         if (isHidden) {
-            // 如果金额输入框有值，用它初始化表达式
             const amt = document.getElementById('expenseAmount').value;
             calcExpr = amt || '';
             updateCalcDisplay();
@@ -1461,7 +1506,6 @@
     }
 
     function calcInput(char) {
-        // 防止连续输入多个运算符
         const lastChar = calcExpr.slice(-1);
         if ('+-*/'.includes(lastChar) && '+-*/'.includes(char)) {
             calcExpr = calcExpr.slice(0, -1) + char;
@@ -1478,14 +1522,12 @@
 
     function calcEqual() {
         try {
-            // 替换乘除符号为JS可识别符号
             let expr = calcExpr.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
-            // 安全计算，避免 eval 风险，此处信任表达式来自按钮，使用 Function 更安全
             const result = new Function('return (' + expr + ')')();
             if (isNaN(result) || !isFinite(result)) {
                 calcExpr = '错误';
             } else {
-                calcExpr = parseFloat(result.toFixed(10)).toString();
+                calcExpr = parseFloat(result.toFixed(2)).toString();
             }
         } catch (e) {
             calcExpr = '错误';
@@ -1508,11 +1550,10 @@
         document.getElementById('calcDisplay').textContent = calcExpr || '0';
     }
 
-    // 点击页面其他位置关闭计算器（可选）
     document.addEventListener('click', function(e) {
         const panel = document.getElementById('calcPanel');
         const toggleBtn = document.getElementById('calcToggleBtn');
-        if (!panel.contains(e.target) && e.target !== toggleBtn && !panel.classList.contains('hidden')) {
+        if (panel && !panel.contains(e.target) && e.target !== toggleBtn && !panel.classList.contains('hidden')) {
             panel.classList.add('hidden');
         }
     });
