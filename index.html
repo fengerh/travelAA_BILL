@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>旅行记账本 v20260525.1400</title>
+    <title>旅行记账本 v20260525.1450</title>
     <style>
         /* ===== 基础配色 ===== */
         :root {
@@ -342,7 +342,7 @@
         @media (max-width: 640px) {
             body { padding: 12px 10px; }
             .card { padding: 16px 14px; margin-bottom: 16px; }
-            h1 { font-size: 1.5em; padding: 10px 10px; margin: 0; margin-bottom: 12px; }
+            h1 { font-size: 1.5em; padding: 10px 10px; margin: 0; margin-bottom: 12px; display: inline;}
             h2 { font-size: 1.3em; margin-bottom: 12px; }
             
             /* 移动端变成单列强制换行显示 */
@@ -470,6 +470,7 @@
             -webkit-appearance: none;
             appearance: none;
             font-family: inherit;
+            text-align: center;
         }
         /* 在日期和时间中间加一条垂直分割线 */
         .combined-datetime-box input[type="date"] {
@@ -557,7 +558,7 @@
         </div>
         <!-- 👈 核心修改：加入了 justify-content: flex-end; 让内部按钮整体向右靠齐 -->
         <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px;">
-            <button id="cancelEditBtn" class="btn btn-lg" style="background-color: #9ca3af; display: none;" onclick="cancelEdit()">取消编辑</button>
+            <button id="cancelEditBtn" class="btn " style="background-color: #9ca3af; display: none;" onclick="cancelEdit()">取消编辑</button>
             <button id="addExpenseBtn" class="btn btn-success" onclick="addExpense()">📝 记录费用</button>
         </div>
     </div>
