@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>旅行记账本 v20260524.2010</title>
+    <title>旅行记账本 v20260525.1030</title>
     <style>
         /* ===== 基础配色 ===== */
         :root {
@@ -500,7 +500,7 @@
                         <option value="CNY">¥ CNY</option>
                     </select>
                     <div class="input-container">
-                        <input type="number" step="0.01" id="expenseAmount" placeholder="0.00">
+                        <input type="number" step="0.01" id="expenseAmount" placeholder="输入金额..." style="text-align: left; padding-left: 22px;>
                         <button type="button" id="calcToggleBtn" onclick="toggleCalc()">🧮计算器</button>
                         <div id="calcPanel" class="hidden" style="position: absolute; top: 100%; left: 0; right: 0; z-index: 10; background: white; border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 12px; margin-top: 4px;">
                             <div id="calcDisplay" style="background: #f3f4f6; padding: 10px; font-size: 1.1em; min-height: 2.5em; word-break: break-all; border-radius: 6px; margin-bottom: 8px;"></div>
@@ -547,7 +547,7 @@
                     <div class="radio-item"><input type="radio" id="cat_other" name="expenseCategory" value="其他" title="其他"><label for="cat_other">其他</label></div>
                 </div>
             </div>
-            <div class="form-group full-width"><label>📌 费用说明 <span style="color: var(--danger-color);">*</span></label><input type="text" id="expenseDesc" placeholder="例如：高铁票..."></div>
+            <div class="form-group full-width"><label>📌 费用说明 <span style="color: var(--danger-color);">*</span></label><input type="text" id="expenseDesc" placeholder="例如：午饭、车票、门票..."></div>
             <div class="form-group"><label>👤 支付人</label><div class="radio-list" id="expensePayerRadios"></div> </div>
             <div class="form-group full-width"><label>👥 费用分摊给</label><div class="checkbox-list" id="splitUsersCheckboxes"></div></div>
         </div>
@@ -598,7 +598,7 @@
     <div id="settingsPanelContent" class="hidden">
         
         <div class="form-group">
-            <label>💱 币种管理（置顶需要优先使用的币种）</label>
+            <label>💱 币种管理（置顶需要优先记录的币种）</label>
             <div style="margin-bottom: 10px;"><strong>已添加币种：</strong> <span id="currenciesList"></span></div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;">
                 <button class="btn btn-sm" onclick="addPresetCurrency('USD','美元','$')">+ 美元</button>
