@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>旅行记账本 v20260525.1450</title>
+    <title>旅行记账本 v20260602.2300</title>
     <style>
         /* ===== 基础配色 ===== */
         :root {
@@ -476,6 +476,26 @@
         .combined-datetime-box input[type="date"] {
             border-right: 1px solid var(--border-color) !important;
         }
+
+
+        /* 按钮组基础布局：弹性盒子，允许换行，间距10px */
+        .btn-group-settlement {
+            display: flex;
+            flex-wrap: wrap; /* 核心：空间不够时自动换行 */
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+
+
+        /* 📱 移动端专属优化：屏幕宽度小于 600px 时触发 */
+        @media (max-width: 600px) {
+            .btn-group-settlement {
+                flex-direction: column; /* 强制垂直排列，每个按钮占一行 */
+            }
+            
+        }
+
     </style>
 </head>
 <body>
@@ -590,7 +610,11 @@
 <div class="card card-settlement-center" style="background-color: #f4f6fa;">
     <div class="flex-between">
         <h2 id="settlementHeader" class="collapsible-header collapsed" onclick="toggleSettlementPanel()">💰 结算中心</h2>
-        <button class="btn btn-sm" onclick="event.stopPropagation(); handleCalculateClick()">🧮 计算并查看结算单</button>
+        <!-- 将两个按钮包裹在一个 div 中 -->
+        <div class="btn-group-settlement">
+            <button onclick="handleCalculateClick()" class="btn btn-sm">🧮 查看结算单</button>
+            <button onclick="exportSettlementCSV()" id="exportSettlementBtn" class="btn btn-sm" style="display:none;">📥 导出结算单</button>
+        </div>
     </div>
     <div id="settlementContentWrapper" class="hidden">
         <div class="table-container"><div id="balancesResult" class="hidden"></div></div>
@@ -644,7 +668,7 @@
             <div class="form-group"><label>🗒️ 设置账本名称</label><div style="display: flex; gap: 10px;"><input type="text" id="ledgerNameInput" placeholder="给账本起个名字..." style="flex:1;"><button class="btn" onclick="setLedgerName()">设置</button></div></div>
         <hr style="margin: 20px 0; border-top: 1px dashed var(--border-color);">
         <div class="form-group">
-            <label>📊 数据管理</label>
+            <label>📊 数据管理 （导入、导出为费用明细和汇率）</label>
             <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
                 <label for="importFile" class="action-link" style="cursor:pointer;">📤 导入CSV</label>
                 <input type="file" id="importFile" accept=".csv" onchange="handleFileImport(event)" style="display:none;">
@@ -977,6 +1001,106 @@
         `;
         document.getElementById('balancesResult').classList.remove('hidden');
     }
+
+    // ========== 新增：导出结算单到 CSV ==========
+    function exportSettlementCSV() {
+        if (!appData.participants.length || !appData.expenses.length) {
+            return showNotification('暂无数据可导出');
+        }
+
+        // 1. 生成文件名：结算单（账本名称+日期时间）.csv
+        const bookName = appData.ledgerName || '未命名';
+        const now = new Date();
+        const dateStr = now.getFullYear() +
+            String(now.getMonth() + 1).padStart(2, '0') +
+            String(now.getDate()).padStart(2, '0') + '_' +
+            String(now.getHours()).padStart(2, '0') +
+            String(now.getMinutes()).padStart(2, '0') +
+            String(now.getSeconds()).padStart(2, '0');
+        const fileName = `结算单（${bookName}${dateStr}）.csv`;
+
+        // 2. 重新计算数据（复用您原有的逻辑，确保数据绝对一致）
+        const stats = {};
+        appData.participants.forEach(p => stats[p] = { paid: 0, consumed: 0 });
+        appData.expenses.forEach(e => {
+            const rate = getCurrencyRate(e.currency || 'CNY');
+            const cnyAmount = e.amount * rate;
+            if(stats[e.payer]) stats[e.payer].paid += cnyAmount;
+            const share = cnyAmount / e.splitAmong.length;
+            e.splitAmong.forEach(p => { if(stats[p]) stats[p].consumed += share; });
+        });
+
+        const cats = ['餐饮','交通','门票','住宿','其他'];
+        const catStats = {};
+        appData.participants.forEach(p => { catStats[p] = {}; cats.forEach(c => catStats[p][c] = 0); });
+        appData.expenses.forEach(e => {
+            const rate = getCurrencyRate(e.currency || 'CNY');
+            const cnyAmount = e.amount * rate;
+            const share = cnyAmount / e.splitAmong.length;
+            e.splitAmong.forEach(p => { if(catStats[p] && catStats[p][e.category] !== undefined) catStats[p][e.category] += share; });
+        });
+
+        // 3. 拼接 CSV 内容
+        let csv = '\uFEFF'; // BOM头，防止Excel打开中文乱码
+
+        // 第一部分：个人收支总览
+        csv += '===== 个人收支总览（人民币） =====\r\n';
+        csv += '姓名,垫付(元),消费(元),应结(元),状态\r\n';
+        appData.participants.forEach(p => {
+            const { paid, consumed } = stats[p];
+            const net = paid - consumed;
+            let status = '已平';
+            if (net > 0.01) status = `应收 +¥${net.toFixed(2)}`;
+            else if (net < -0.01) status = `应付 −¥${Math.abs(net).toFixed(2)}`;
+            else status = '已平 ¥0.00';
+            
+            csv += `${p},${paid.toFixed(2)},${consumed.toFixed(2)},${net.toFixed(2)},${status}\r\n`;
+        });
+
+        csv += '\r\n'; // 空行分隔
+
+        // 第二部分：个人消费分类
+        csv += '===== 个人消费分类（人民币） =====\r\n';
+        csv += '姓名,' + cats.join(',') + ',合计\r\n';
+        
+        let grandTotals = {};
+        cats.forEach(c => grandTotals[c] = 0);
+        let grandTotalAll = 0;
+
+        appData.participants.forEach(p => {
+            let row = `${p}`;
+            let personTotal = 0;
+            cats.forEach(c => {
+                const amt = catStats[p][c];
+                personTotal += amt;
+                grandTotals[c] += amt;
+                row += `,${amt > 0 ? amt.toFixed(2) : '0.00'}`;
+            });
+            grandTotalAll += personTotal;
+            row += `,${personTotal.toFixed(2)}`;
+            csv += row + '\r\n';
+        });
+
+        // 添加合计行
+        let summaryRow = '合计';
+        cats.forEach(c => summaryRow += `,${grandTotals[c].toFixed(2)}`);
+        summaryRow += `,${grandTotalAll.toFixed(2)}`;
+        csv += summaryRow + '\r\n';
+
+        // 4. 触发浏览器下载
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        showNotification('结算单导出成功！');
+    }
+
 
     function exportToCSV() {
         if( !appData.expenses.length) return showNotification('无数据导出');
@@ -1493,6 +1617,10 @@
             header.classList.remove('collapsed');
         }
         calculateBalances();
+
+        // 【新增】计算完成后，显示导出结算单按钮
+        const exportBtn = document.getElementById('exportSettlementBtn');
+        if (exportBtn) exportBtn.style.display = 'inline-block';
     }
 
     window.onload = loadData;
