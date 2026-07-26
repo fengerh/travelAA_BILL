@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>旅行记账本 v20260602.2300</title>
+    <title>旅行记账本 v20260726.2230</title>
     <style>
         /* ===== 基础配色 ===== */
         :root {
@@ -292,6 +292,9 @@
         .right-cell { text-align: center; }
         .center-cell { text-align: center; }
         tr:last-child td { border-bottom: none; }
+        /* 按日期分组的隔行底色：同一天连续同色，跨天切换浅蓝↔白 */
+        tr.row-blue td { background-color: #eef4ff; }
+        tr.row-white td { background-color: #ffffff; }
 
         .badge {
             background-color: #e5e7eb;
@@ -1116,8 +1119,12 @@
 
         csv += '\n---费用明细---\n';
 
-        csv += '日期,金额,币种,人均,大类,说明,付款人,分摊人\n';
-        csv += appData.expenses.map(e => [
+        // 序号列追加在末尾，保持原有字段位置不变，旧版导入器按固定索引仍能解析
+        csv += '日期,金额,币种,人均,大类,说明,付款人,分摊人,序号\n';
+        const seqMap = buildSeqMap();
+        // 按序号升序（旧→新，即日期升序）输出
+        const sorted = [...appData.expenses].sort((a, b) => seqMap[a.id] - seqMap[b.id]);
+        csv += sorted.map(e => [
             `"${e.date}"`,
             e.amount.toFixed(2),
             `"${e.currency || 'CNY'}"`,
@@ -1125,7 +1132,8 @@
             `"${e.category}"`,
             `"${e.description.replace(/"/g,'""')}"`,
             `"${e.payer}"`,
-            `"${e.splitAmong.join('; ')}"`
+            `"${e.splitAmong.join('; ')}"`,
+            seqMap[e.id]
         ].join(',')).join('\n');
 
         const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv' });
@@ -1185,10 +1193,21 @@
                     expenseLines = lines.slice(1);
                 }
 
+                // 基于表头字段名定位列，兼容旧格式（无序号）与新格式（含序号、列序可变）
+                let headerFields = [];
                 if (headerLine) {
-                    const headerFields = headerLine.split(',').map(h => h.replace(/"/g, '').trim());
-                    hasCurrency = headerFields.includes('币种');
+                    headerFields = headerLine.split(',').map(h => h.replace(/"/g, '').trim());
                 }
+                const getFieldIdx = (name) => headerFields.indexOf(name);
+                const dateIdx = getFieldIdx('日期');
+                const amtIdx = getFieldIdx('金额');
+                const curIdx = getFieldIdx('币种');
+                const catIdx = getFieldIdx('大类');
+                const descIdx = getFieldIdx('说明');
+                const payerIdx = getFieldIdx('付款人');
+                const splitIdx = getFieldIdx('分摊人');
+                const haveHeaderMap = dateIdx >= 0 && amtIdx >= 0 && catIdx >= 0 && descIdx >= 0 && payerIdx >= 0 && splitIdx >= 0;
+                if (!haveHeaderMap) hasCurrency = headerFields.includes('币种');
 
                 if (importedLedgerName) {
                     if (appData.ledgerName === '未命名' || appData.ledgerName === '') {
@@ -1213,35 +1232,33 @@
                     const line = expenseLines[i].trim();
                     if (!line) continue;
                     const vals = line.split(',').map(v => v.replace(/(^"|"$)/g, '').trim());
-                    if (vals.length < (hasCurrency ? 8 : 7)) continue;
 
-                    let d = vals[0];
-                    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) d += ' 00:00';
-                    const amt = parseFloat(vals[1]);
-                    if (isNaN(amt)) continue;
-
-                    let currency = 'CNY';
-                    let catIndex, descIndex, payerIndex, splitIndex;
-
-                    if (hasCurrency) {
-                        currency = vals[2] || 'CNY';
-                        catIndex = 4;
-                        descIndex = 5;
-                        payerIndex = 6;
-                        splitIndex = 7;
+                    let dIdx, aIdx, cIdx, catI, descI, payI, splitI, currency;
+                    if (haveHeaderMap) {
+                        // 新格式：按字段名定位，序号/人均列自动忽略，列序可变
+                        dIdx = dateIdx; aIdx = amtIdx; cIdx = curIdx;
+                        catI = catIdx; descI = descIdx; payI = payerIdx; splitI = splitIdx;
+                        currency = (cIdx >= 0 && vals[cIdx]) ? vals[cIdx] : 'CNY';
                     } else {
-                        catIndex = 3;
-                        descIndex = 4;
-                        payerIndex = 5;
-                        splitIndex = 6;
+                        // 旧/无表头回退：按固定列索引
+                        if (vals.length < (hasCurrency ? 8 : 7)) continue;
+                        dIdx = 0; aIdx = 1;
+                        if (hasCurrency) { currency = vals[2] || 'CNY'; catI = 4; descI = 5; payI = 6; splitI = 7; }
+                        else { currency = 'CNY'; catI = 3; descI = 4; payI = 5; splitI = 6; }
                     }
 
-                    const cat = ['餐饮', '交通', '门票', '住宿', '其他'].includes(vals[catIndex]) ? vals[catIndex] : '其他';
-                    if (!vals[descIndex] || !vals[payerIndex]) continue;
-                    const split = vals[splitIndex].split(/[;,]/).map(s => s.trim()).filter(s => s);
+                    let d = vals[dIdx];
+                    if (!d) continue;
+                    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) d += ' 00:00';
+                    const amt = parseFloat(vals[aIdx]);
+                    if (isNaN(amt)) continue;
+
+                    const cat = ['餐饮', '交通', '门票', '住宿', '其他'].includes(vals[catI]) ? vals[catI] : '其他';
+                    if (!vals[descI] || !vals[payI]) continue;
+                    const split = vals[splitI].split(/[;,]/).map(s => s.trim()).filter(s => s);
                     if (!split.length) continue;
 
-                    newM.add(vals[payerIndex]);
+                    newM.add(vals[payI]);
                     split.forEach(s => newM.add(s));
 
                     valid.push({
@@ -1249,8 +1266,8 @@
                         date: d,
                         amount: amt,
                         category: cat,
-                        description: vals[descIndex],
-                        payer: vals[payerIndex],
+                        description: vals[descI],
+                        payer: vals[payI],
                         splitAmong: split,
                         currency: currency
                     });
@@ -1332,32 +1349,48 @@
         renderExpensesTable(filtered);
     }
 
+    // 基于完整 appData.expenses，按日期时间升序生成全局序号映射 { [id]: 1..N }
+    // 显示时按日期降序，故最新日期那笔序号最大（倒序显示）
+    function buildSeqMap() {
+        const seqMap = {};
+        [...appData.expenses]
+            .sort((a, b) => new Date(a.date) - new Date(b.date))
+            .forEach((e, i) => { seqMap[e.id] = i + 1; });
+        return seqMap;
+    }
+
     function renderExpensesTable(exp) {
         const el = document.getElementById('expensesList');
         if(!exp.length) {
             el.innerHTML = '<p style="text-align:center; padding:30px; color:#7e6b8f;">✨ 暂无费用记录</p>';
             return;
         }
+        const seqMap = buildSeqMap();
+        // 显示按日期降序（最新在上）；序号取自全局映射
         const sorted = [...exp].sort((a, b) => new Date(b.date) - new Date(a.date));
-        el.innerHTML = `<table><thead><tr><th>日期</th><th>金额</th><th>币种</th><th>大类</th><th>说明</th><th>付款人</th><th>分摊人</th><th>人均</th><th></th></tr></thead><tbody>` +
-            sorted.map(e => {
-                const symbol = getCurrencySymbol(e.currency || 'CNY');
-                return `<tr>
-                    <td>${e.date}</td>
-                    <td class="right-cell">${symbol}${e.amount.toFixed(2)}</td>
-                    <td>${e.currency || 'CNY'}</td>
-                    <td>${e.category}</td>
-                    <td>${e.description}</td>
-                    <td>${e.payer}</td>
-                    <td>${e.splitAmong.join(', ')}</td>
-                    <td class="right-cell">${symbol}${(e.amount / e.splitAmong.length).toFixed(2)}</td>
-                    <td class="center-cell">
-                        <span class="action-link" onclick="editExpense(${e.id})">编辑</span>
-                        <span class="action-link delete-link" onclick="deleteExpense(${e.id})">删除</span>
-                    </td>
-                </tr>`;
-            }).join('') +
-            `</tbody></table>`;
+        let prevDate = null, groupIdx = 0;
+        const rows = sorted.map(e => {
+            const day = e.date.substring(0, 10);
+            if (day !== prevDate) { groupIdx++; prevDate = day; }
+            const rowClass = (groupIdx % 2 === 1) ? 'row-blue' : 'row-white';
+            const symbol = getCurrencySymbol(e.currency || 'CNY');
+            return `<tr class="${rowClass}">
+                <td>${seqMap[e.id]}</td>
+                <td>${e.date}</td>
+                <td class="right-cell">${symbol}${e.amount.toFixed(2)}</td>
+                <td>${e.currency || 'CNY'}</td>
+                <td>${e.category}</td>
+                <td>${e.description}</td>
+                <td>${e.payer}</td>
+                <td>${e.splitAmong.join(', ')}</td>
+                <td class="right-cell">${symbol}${(e.amount / e.splitAmong.length).toFixed(2)}</td>
+                <td class="center-cell">
+                    <span class="action-link" onclick="editExpense(${e.id})">编辑</span>
+                    <span class="action-link delete-link" onclick="deleteExpense(${e.id})">删除</span>
+                </td>
+            </tr>`;
+        }).join('');
+        el.innerHTML = `<table><thead><tr><th>序号</th><th>日期</th><th>金额</th><th>币种</th><th>大类</th><th>说明</th><th>付款人</th><th>分摊人</th><th>人均</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
     }
 
     function renderExpensesList() {
