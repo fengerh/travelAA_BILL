@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>旅行记账本 v20260726.2230</title>
+    <title>旅行记账本 v20261026.2240</title>
     <style>
         /* ===== 基础配色 ===== */
         :root {
@@ -296,6 +296,32 @@
         tr.row-blue td { background-color: #eef4ff; }
         tr.row-white td { background-color: #ffffff; }
 
+        /* ===== 还款记录行：整行浅紫高亮（优先级高于日期分组底色） ===== */
+        tr.row-settlement td {
+            background-color: #f6f4ff;
+        }
+        tr.row-settlement td:first-child {
+            box-shadow: inset 3px 0 0 #7c3aed;
+        }
+        .cat-badge-settle {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 999px;
+            background-color: #ede9fe;
+            color: #7c3aed;
+            font-size: 0.85em;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+        .amount-transfer { color: #7c3aed; font-weight: 500; }
+        .amount-zero { color: #9ca3af; }
+        .overview-note {
+            font-size: 12px;
+            color: #6b7280;
+            margin: -6px 0 10px 2px;
+            line-height: 1.6;
+        }
+
         .badge {
             background-color: #e5e7eb;
             color: #4b5563;
@@ -573,11 +599,12 @@
                     <div class="radio-item"><input type="radio" id="cat_ticket" name="expenseCategory" value="门票" title="门票"><label for="cat_ticket">票</label></div>
                     <div class="radio-item"><input type="radio" id="cat_accommodation" name="expenseCategory" value="住宿" title="住宿"><label for="cat_accommodation">住</label></div>
                     <div class="radio-item"><input type="radio" id="cat_other" name="expenseCategory" value="其他" title="其他"><label for="cat_other">其他</label></div>
+                    <div class="radio-item"><input type="radio" id="cat_repay" name="expenseCategory" value="还款" title="还款：支付人把钱还给分摊人"><label for="cat_repay">还款</label></div>
                 </div>
             </div>
             <div class="form-group full-width"><label>📌 费用说明 <span style="color: var(--danger-color);">*</span></label><input type="text" id="expenseDesc" placeholder="例如：午饭、车票、门票..."></div>
-            <div class="form-group"><label>👤 支付人</label><div class="radio-list" id="expensePayerRadios"></div> </div>
-            <div class="form-group full-width"><label>👥 费用分摊给</label><div class="checkbox-list" id="splitUsersCheckboxes"></div></div>
+            <div class="form-group"><label id="payerLabel">👤 支付人</label><div class="radio-list" id="expensePayerRadios"></div> </div>
+            <div class="form-group full-width"><label id="splitLabel">👥 费用分摊给</label><div class="checkbox-list" id="splitUsersCheckboxes"></div></div>
         </div>
         <!-- 👈 核心修改：加入了 justify-content: flex-end; 让内部按钮整体向右靠齐 -->
         <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px;">
@@ -598,7 +625,7 @@
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 12px;">
                 <div><label>开始</label><input type="date" id="filterDateFrom" oninput="applyFilters()"></div>
                 <div><label>结束</label><input type="date" id="filterDateTo" oninput="applyFilters()"></div>
-                <div><label>大类</label><select id="filterCategory" onchange="applyFilters()"><option value="">全部</option><option>餐饮</option><option>交通</option><option>门票</option><option>住宿</option><option>其他</option></select></div>
+                <div><label>大类</label><select id="filterCategory" onchange="applyFilters()"><option value="">全部</option><option>餐饮</option><option>交通</option><option>门票</option><option>住宿</option><option>其他</option><option>还款</option></select></div>
                 <div><label>付款人</label><select id="filterPayer" onchange="applyFilters()"><option value="">全部</option></select></div>
                 <div><label>分摊人</label><select id="filterSplitter" onchange="applyFilters()"><option value="">全部</option></select></div>
                 <div><label>币种</label><select id="filterCurrency" onchange="applyFilters()"><option value="">全部</option></select></div>
@@ -685,6 +712,19 @@
 <div id="notification" class="notification"></div>
 
 <script>
+    // ===== 费用大类常量 =====
+    // EXPENSE_CATS：所有可选大类（含还款）
+    // CONSUME_CATS：真实消费大类（分类统计只用这一组，还款不计入）
+    const EXPENSE_CATS = ['餐饮', '交通', '门票', '住宿', '其他', '还款'];
+    const CONSUME_CATS = ['餐饮', '交通', '门票', '住宿', '其他'];
+    const REPAY_CATEGORY = '还款';
+    const DESC_PLACEHOLDER_DEFAULT = '例如：午饭、车票、门票...';
+
+    // 是否还款记录（老数据无 category 异常值也不会误判）
+    function isRepay(exp) {
+        return !!exp && exp.category === REPAY_CATEGORY;
+    }
+
     let appData = { 
         ledgerName: "未命名", 
         participants: [], 
@@ -725,6 +765,7 @@
         renderAll();
         updateHintBannerVisibility();
         initDateTimeNowOnClear();
+        bindCategoryHint();
     }
 
     function initDateTimeNowOnClear() {
@@ -743,6 +784,36 @@
         timeInput.addEventListener('input', () => {
             if (!timeInput.value) setNow();
         });
+    }
+
+    // 大类切换时联动文案：选中「还款」→ 支付人=还款人、分摊人=收款人
+    function updateCategoryHint() {
+        const checked = document.querySelector('input[name="expenseCategory"]:checked');
+        const isSettle = !!checked && checked.value === REPAY_CATEGORY;
+        const descInput = document.getElementById('expenseDesc');
+        const payerLabel = document.getElementById('payerLabel');
+        const splitLabel = document.getElementById('splitLabel');
+        if (descInput) {
+            descInput.placeholder = isSettle ? '还款：谁转给谁，例如「把上次晚饭的钱还给李四」' : DESC_PLACEHOLDER_DEFAULT;
+        }
+        if (payerLabel) payerLabel.textContent = isSettle ? '👤 还款人（转出）' : '👤 支付人';
+        if (splitLabel) splitLabel.textContent = isSettle ? '👥 收款人（转入）' : '👥 费用分摊给';
+    }
+
+    function bindCategoryHint() {
+        document.querySelectorAll('input[name="expenseCategory"]').forEach(r => {
+            r.addEventListener('change', () => {
+                updateCategoryHint();
+                // 手动切到「还款」时，若分摊人仍是默认全选，则清空让用户明确勾选收款人
+                if (r.checked && r.value === REPAY_CATEGORY) {
+                    const boxes = Array.from(document.querySelectorAll('#splitUsersCheckboxes input'));
+                    if (boxes.length && boxes.every(cb => cb.checked)) {
+                        boxes.forEach(cb => cb.checked = false);
+                    }
+                }
+            });
+        });
+        updateCategoryHint();
     }
 
     function saveData() { localStorage.setItem('travelAccountingApp', JSON.stringify(appData)); }
@@ -790,7 +861,7 @@
         if(appData.participants.length <= 1) return showNotification('至少保留一位成员');
         if(confirm(`移除"${name}"？相关费用也会删除。`)) {
             appData.participants = appData.participants.filter(p => p !== name);
-            appData.expenses = appData.expenses.filter(e => e.payer !== name && !e.splitAmong.includes(name));
+            appData.expenses = appData.expenses.filter(e => e.payer !== name && !(e.splitAmong || []).includes(name));
             saveData();
             renderAll();
             updateHintBannerVisibility();
@@ -809,6 +880,7 @@
             document.getElementById('expenseCurrency').value = appData.currencies[0].code;
         }
         renderExpenseForm();
+        updateCategoryHint();
         editingExpenseId = null;
         document.getElementById('addExpenseBtn').textContent = '📝 记录费用';
         document.getElementById('cancelEditBtn').style.display = 'none';
@@ -829,17 +901,23 @@
             const now = new Date();
             time = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
         }
-        const desc = document.getElementById('expenseDesc').value.trim();
+        let desc = document.getElementById('expenseDesc').value.trim();
         const cat = document.querySelector('input[name="expenseCategory"]:checked')?.value;
         const split = Array.from(document.querySelectorAll('#splitUsersCheckboxes input:checked')).map(cb => cb.value);
         const currency = document.getElementById('expenseCurrency').value;
+
+        // 还款记录：说明留空时自动补默认文案
+        if (cat === REPAY_CATEGORY && !desc) desc = '还款';
 
         if(!cat) return showNotification('请选择大类');
         if(!amount || amount <= 0) return showNotification('金额无效');
         if(!baseDate) return showNotification('请选择日期');
         if(!desc) return showNotification('请填写说明');
         if(!payer) return showNotification('请选择支付人');
-        if(split.length === 0) return showNotification('至少选一位分摊人');
+        if(split.length === 0) return showNotification(cat === REPAY_CATEGORY ? '请选择收款人（分摊人）' : '至少选一位分摊人');
+        if(cat === REPAY_CATEGORY) {
+            if(split.includes(payer)) return showNotification('还款的收款人不能是还款人自己，请重新选择');
+        }
 
         const dateStr = `${baseDate} ${time}`;
 
@@ -889,6 +967,7 @@
             document.querySelectorAll('input[name="expenseCategory"]').forEach(r => r.checked = false);
             document.querySelectorAll('#splitUsersCheckboxes input').forEach(cb => cb.checked = true);
             document.getElementById('expenseCurrency').value = 'CNY';
+            updateCategoryHint();
             renderExpensesList();
             if (!document.getElementById('balancesResult').classList.contains('hidden')) calculateBalances();
             showNotification('费用已记录');
@@ -909,9 +988,10 @@
         const payerRadio = document.querySelector(`input[name="expensePayer"][value="${exp.payer}"]`);
         if (payerRadio) payerRadio.checked = true;
         document.querySelectorAll('#splitUsersCheckboxes input').forEach(cb => {
-            cb.checked = exp.splitAmong.includes(cb.value);
+            cb.checked = (exp.splitAmong || []).includes(cb.value);
         });
         document.getElementById('expenseCurrency').value = exp.currency || 'CNY';
+        updateCategoryHint();
         editingExpenseId = id;
         document.getElementById('addExpenseBtn').textContent = '✏️ 更新费用';
         document.getElementById('cancelEditBtn').style.display = 'inline-block';
@@ -934,24 +1014,77 @@
         }
     }
 
+    // ===== 公共统计（金额按「分」整数累加，规避浮点漂移） =====
+    function toCents(exp) {
+        const rate = getCurrencyRate(exp.currency || 'CNY');
+        const amount = Number(exp.amount);
+        if (!isFinite(amount)) return 0;
+        return Math.round(amount * rate * 100);
+    }
+
+    // 收款/付款总览：真实消费与还款分开累计
+    function computeStats() {
+        const stats = {};
+        appData.participants.forEach(p => {
+            stats[p] = { paidExpense: 0, consumedExpense: 0, paidTransfer: 0, consumedTransfer: 0, net: 0 };
+        });
+        appData.expenses.forEach(e => {
+            const cents = toCents(e);
+            const split = Array.isArray(e.splitAmong) ? e.splitAmong : [];
+            const payerStat = stats[e.payer];
+            if (!payerStat) return; // 老数据中付款人已被移除时跳过，避免报错
+            if (isRepay(e)) {
+                payerStat.paidTransfer += cents;
+                if (split.length) {
+                    const share = cents / split.length;
+                    split.forEach(p => { if (stats[p]) stats[p].consumedTransfer += share; });
+                }
+            } else {
+                payerStat.paidExpense += cents;
+                if (split.length) {
+                    const share = cents / split.length;
+                    split.forEach(p => { if (stats[p]) stats[p].consumedExpense += share; });
+                }
+            }
+        });
+        Object.keys(stats).forEach(p => {
+            const s = stats[p];
+            s.net = Math.round((s.paidExpense + s.paidTransfer) - (s.consumedExpense + s.consumedTransfer));
+        });
+        return stats;
+    }
+
+    // 消费分类统计：只统计 CONSUME_CATS 内的真实消费，「还款」不参与
+    function computeCatStats() {
+        const catStats = {};
+        appData.participants.forEach(p => {
+            catStats[p] = {};
+            CONSUME_CATS.forEach(c => catStats[p][c] = 0);
+        });
+        appData.expenses.forEach(e => {
+            if (isRepay(e)) return;
+            if (CONSUME_CATS.indexOf(e.category) === -1) return;
+            const split = Array.isArray(e.splitAmong) ? e.splitAmong : [];
+            if (!split.length) return;
+            const share = toCents(e) / split.length;
+            split.forEach(p => { if (catStats[p]) catStats[p][e.category] += share; });
+        });
+        return catStats;
+    }
+
     function calculateBalances() {
         if(!appData.participants.length) return showNotification('请添加成员');
         if(!appData.expenses.length) return showNotification('暂无费用');
 
-        const stats = {};
-        appData.participants.forEach(p => stats[p] = { paid: 0, consumed: 0 });
-
-        appData.expenses.forEach(e => {
-            const rate = getCurrencyRate(e.currency || 'CNY');
-            const cnyAmount = e.amount * rate;
-            stats[e.payer].paid += cnyAmount;
-            const share = cnyAmount / e.splitAmong.length;
-            e.splitAmong.forEach(p => { if(stats[p]) stats[p].consumed += share; });
-        });
+        const stats = computeStats();
 
         const rows = appData.participants.map(p => {
-            const { paid, consumed } = stats[p];
-            const net = paid - consumed;
+            const s = stats[p];
+            const paid = s.paidExpense / 100;
+            const consumed = s.consumedExpense / 100;
+            const outAmt = s.paidTransfer / 100;
+            const inAmt = s.consumedTransfer / 100;
+            const net = s.net / 100;
             let status = '', cls = '';
             if (net > 0.01) {
                 status = `应收 +¥${net.toFixed(2)}`;
@@ -962,22 +1095,19 @@
             } else {
                 status = '已平 ¥0.00';
             }
-            return `<tr><td>${p}</td><td class="right-cell">¥${paid.toFixed(2)}</td><td class="right-cell">¥${consumed.toFixed(2)}</td><td class="right-cell ${cls}">${status}</td></tr>`;
+            return `<tr><td>${p}</td>
+                <td class="right-cell">¥${paid.toFixed(2)}</td>
+                <td class="right-cell">¥${consumed.toFixed(2)}</td>
+                <td class="right-cell ${outAmt > 0 ? 'amount-transfer' : 'amount-zero'}">${outAmt > 0 ? '¥' + outAmt.toFixed(2) : '—'}</td>
+                <td class="right-cell ${inAmt > 0 ? 'amount-transfer' : 'amount-zero'}">${inAmt > 0 ? '¥' + inAmt.toFixed(2) : '—'}</td>
+                <td class="right-cell ${cls}">${status}</td></tr>`;
         }).join('');
 
-        const cats = ['餐饮','交通','门票','住宿','其他'];
-        const catStats = {};
-        appData.participants.forEach(p => { catStats[p] = {}; cats.forEach(c => catStats[p][c] = 0); });
-        appData.expenses.forEach(e => {
-            const rate = getCurrencyRate(e.currency || 'CNY');
-            const cnyAmount = e.amount * rate;
-            const share = cnyAmount / e.splitAmong.length;
-            e.splitAmong.forEach(p => { if(catStats[p]) catStats[p][e.category] += share; });
-        });
+        const catStats = computeCatStats();
         const catRows = appData.participants.map(p => {
             let tds = `<td>${p}</td>`, total = 0;
-            cats.forEach(c => {
-                const amt = catStats[p][c];
+            CONSUME_CATS.forEach(c => {
+                const amt = (catStats[p][c] || 0) / 100;
                 total += amt;
                 tds += `<td class="right-cell">${amt > 0 ? '¥' + amt.toFixed(2) : '-'}</td>`;
             });
@@ -988,8 +1118,8 @@
         let summaryRow = '<tr style="font-weight: bold; background-color: #f0f0f0;">';
         summaryRow += '<td>合计</td>';
         let grandTotal = 0;
-        cats.forEach(c => {
-            const catSum = appData.participants.reduce((sum, p) => sum + (catStats[p][c] || 0), 0);
+        CONSUME_CATS.forEach(c => {
+            const catSum = appData.participants.reduce((sum, p) => sum + (catStats[p][c] || 0), 0) / 100;
             grandTotal += catSum;
             summaryRow += `<td class="right-cell">¥${catSum.toFixed(2)}</td>`;
         });
@@ -997,9 +1127,11 @@
         summaryRow += '</tr>';
 
         document.getElementById('balancesResult').innerHTML = `
-            <h3 style="margin:20px 0 10px;">📊 个人收支总览（人民币）</h3>
-            <table><thead><tr><th>姓名</th><th>垫付</th><th>消费</th><th>应结</th></tr></thead><tbody>${rows}</tbody></table>
-            <h3 style="margin:30px 0 10px;">📂 个人消费分类（人民币）</h3>
+            <h3 style="margin:20px 0 6px;">📊 个人收支总览（人民币）</h3>
+            <div class="overview-note">💡 垫付、消费只统计真实消费；转出 = 你转给他人的还款，转入 = 他人转给你的还款；应结 =（垫付 + 转出）−（消费 + 转入）</div>
+            <table><thead><tr><th>姓名</th><th>垫付</th><th>消费</th><th>转出</th><th>转入</th><th>应结</th></tr></thead><tbody>${rows}</tbody></table>
+            <h3 style="margin:30px 0 6px;">📂 个人消费分类（人民币）</h3>
+            <div class="overview-note">💡 中途还款不计入消费分类统计</div>
             <table><thead><tr><th>姓名</th><th>餐饮</th><th>交通</th><th>门票</th><th>住宿</th><th>其他</th><th>合计</th></tr></thead><tbody>${catRows}${summaryRow}</tbody></table>
         `;
         document.getElementById('balancesResult').classList.remove('hidden');
@@ -1022,42 +1154,30 @@
             String(now.getSeconds()).padStart(2, '0');
         const fileName = `结算单（${bookName}${dateStr}）.csv`;
 
-        // 2. 重新计算数据（复用您原有的逻辑，确保数据绝对一致）
-        const stats = {};
-        appData.participants.forEach(p => stats[p] = { paid: 0, consumed: 0 });
-        appData.expenses.forEach(e => {
-            const rate = getCurrencyRate(e.currency || 'CNY');
-            const cnyAmount = e.amount * rate;
-            if(stats[e.payer]) stats[e.payer].paid += cnyAmount;
-            const share = cnyAmount / e.splitAmong.length;
-            e.splitAmong.forEach(p => { if(stats[p]) stats[p].consumed += share; });
-        });
-
-        const cats = ['餐饮','交通','门票','住宿','其他'];
-        const catStats = {};
-        appData.participants.forEach(p => { catStats[p] = {}; cats.forEach(c => catStats[p][c] = 0); });
-        appData.expenses.forEach(e => {
-            const rate = getCurrencyRate(e.currency || 'CNY');
-            const cnyAmount = e.amount * rate;
-            const share = cnyAmount / e.splitAmong.length;
-            e.splitAmong.forEach(p => { if(catStats[p] && catStats[p][e.category] !== undefined) catStats[p][e.category] += share; });
-        });
+        // 2. 复用公共统计，确保与页面数字绝对一致
+        const stats = computeStats();
+        const catStats = computeCatStats();
+        const cats = CONSUME_CATS;
 
         // 3. 拼接 CSV 内容
         let csv = '\uFEFF'; // BOM头，防止Excel打开中文乱码
 
         // 第一部分：个人收支总览
         csv += '===== 个人收支总览（人民币） =====\r\n';
-        csv += '姓名,垫付(元),消费(元),应结(元),状态\r\n';
+        csv += '姓名,垫付(元),消费(元),转出(元),转入(元),应结(元),状态\r\n';
         appData.participants.forEach(p => {
-            const { paid, consumed } = stats[p];
-            const net = paid - consumed;
+            const s = stats[p];
+            const paid = s.paidExpense / 100;
+            const consumed = s.consumedExpense / 100;
+            const outAmt = s.paidTransfer / 100;
+            const inAmt = s.consumedTransfer / 100;
+            const net = s.net / 100;
             let status = '已平';
             if (net > 0.01) status = `应收 +¥${net.toFixed(2)}`;
             else if (net < -0.01) status = `应付 −¥${Math.abs(net).toFixed(2)}`;
             else status = '已平 ¥0.00';
-            
-            csv += `${p},${paid.toFixed(2)},${consumed.toFixed(2)},${net.toFixed(2)},${status}\r\n`;
+
+            csv += `${p},${paid.toFixed(2)},${consumed.toFixed(2)},${outAmt.toFixed(2)},${inAmt.toFixed(2)},${net.toFixed(2)},${status}\r\n`;
         });
 
         csv += '\r\n'; // 空行分隔
@@ -1124,17 +1244,21 @@
         const seqMap = buildSeqMap();
         // 按序号升序（旧→新，即日期升序）输出
         const sorted = [...appData.expenses].sort((a, b) => seqMap[a.id] - seqMap[b.id]);
-        csv += sorted.map(e => [
-            `"${e.date}"`,
-            e.amount.toFixed(2),
-            `"${e.currency || 'CNY'}"`,
-            (e.amount / e.splitAmong.length).toFixed(2),
-            `"${e.category}"`,
-            `"${e.description.replace(/"/g,'""')}"`,
-            `"${e.payer}"`,
-            `"${e.splitAmong.join('; ')}"`,
-            seqMap[e.id]
-        ].join(',')).join('\n');
+        csv += sorted.map(e => {
+            const splitList = Array.isArray(e.splitAmong) ? e.splitAmong : [];
+            const avg = (isRepay(e) || !splitList.length) ? '' : (e.amount / splitList.length).toFixed(2);
+            return [
+                `"${e.date}"`,
+                e.amount.toFixed(2),
+                `"${e.currency || 'CNY'}"`,
+                avg,
+                `"${e.category}"`,
+                `"${(e.description || '').replace(/"/g,'""')}"`,
+                `"${e.payer}"`,
+                `"${splitList.join('; ')}"`,
+                seqMap[e.id]
+            ].join(',');
+        }).join('\n');
 
         const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv' });
         const a = document.createElement('a');
@@ -1253,9 +1377,9 @@
                     const amt = parseFloat(vals[aIdx]);
                     if (isNaN(amt)) continue;
 
-                    const cat = ['餐饮', '交通', '门票', '住宿', '其他'].includes(vals[catI]) ? vals[catI] : '其他';
+                    const cat = EXPENSE_CATS.indexOf(vals[catI]) !== -1 ? vals[catI] : '其他';
                     if (!vals[descI] || !vals[payI]) continue;
-                    const split = vals[splitI].split(/[;,]/).map(s => s.trim()).filter(s => s);
+                    const split = (vals[splitI] || '').split(/[;,]/).map(s => s.trim()).filter(s => s);
                     if (!split.length) continue;
 
                     newM.add(vals[payI]);
@@ -1344,7 +1468,7 @@
         if(to) filtered = filtered.filter(e => e.date.substring(0,10) <= to);
         if(cat) filtered = filtered.filter(e => e.category === cat);
         if(payer) filtered = filtered.filter(e => e.payer === payer);
-        if(splitter) filtered = filtered.filter(e => e.splitAmong.includes(splitter));
+        if(splitter) filtered = filtered.filter(e => (e.splitAmong || []).includes(splitter));
         if(currency) filtered = filtered.filter(e => (e.currency || 'CNY') === currency);
         renderExpensesTable(filtered);
     }
@@ -1372,18 +1496,26 @@
         const rows = sorted.map(e => {
             const day = e.date.substring(0, 10);
             if (day !== prevDate) { groupIdx++; prevDate = day; }
-            const rowClass = (groupIdx % 2 === 1) ? 'row-blue' : 'row-white';
+            const settle = isRepay(e);
+            // 还款行整行浅紫高亮，优先于按日期分组的蓝白隔行底色
+            const rowClass = settle ? 'row-settlement' : ((groupIdx % 2 === 1) ? 'row-blue' : 'row-white');
             const symbol = getCurrencySymbol(e.currency || 'CNY');
+            const splitList = Array.isArray(e.splitAmong) ? e.splitAmong : [];
+            const catCell = settle ? '<span class="cat-badge-settle">还款</span>' : e.category;
+            const descCell = settle ? `↗ ${e.description}` : e.description;
+            const avgCell = (!settle && splitList.length)
+                ? `${symbol}${(e.amount / splitList.length).toFixed(2)}`
+                : '—';
             return `<tr class="${rowClass}">
                 <td>${seqMap[e.id]}</td>
                 <td>${e.date}</td>
                 <td class="right-cell">${symbol}${e.amount.toFixed(2)}</td>
                 <td>${e.currency || 'CNY'}</td>
-                <td>${e.category}</td>
-                <td>${e.description}</td>
+                <td>${catCell}</td>
+                <td>${descCell}</td>
                 <td>${e.payer}</td>
-                <td>${e.splitAmong.join(', ')}</td>
-                <td class="right-cell">${symbol}${(e.amount / e.splitAmong.length).toFixed(2)}</td>
+                <td>${splitList.join(', ')}</td>
+                <td class="right-cell${settle ? ' amount-zero' : ''}">${avgCell}</td>
                 <td class="center-cell">
                     <span class="action-link" onclick="editExpense(${e.id})">编辑</span>
                     <span class="action-link delete-link" onclick="deleteExpense(${e.id})">删除</span>
@@ -1473,7 +1605,7 @@
                 const payerRadio = document.querySelector(`input[name="expensePayer"][value="${exp.payer}"]`);
                 if (payerRadio) payerRadio.checked = true;
                 document.querySelectorAll('#splitUsersCheckboxes input').forEach(cb => {
-                    cb.checked = exp.splitAmong.includes(cb.value);
+                    cb.checked = (exp.splitAmong || []).includes(cb.value);
                 });
                 document.getElementById('expenseCurrency').value = exp.currency || 'CNY';
             }
