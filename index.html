@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>旅行记账本 v20261026.2240</title>
+    <title>旅行记账本 v20261109.1350</title>
     <style>
         /* ===== 基础配色 ===== */
         :root {
@@ -803,13 +803,18 @@
     function bindCategoryHint() {
         document.querySelectorAll('input[name="expenseCategory"]').forEach(r => {
             r.addEventListener('change', () => {
+                if (!r.checked) return;
+                // 切换前记录已选人员及是否全选，用于决定还款收款人的初始选择
+                const boxes = Array.from(document.querySelectorAll('#splitUsersCheckboxes input'));
+                const selected = boxes.filter(el => el.checked).map(el => el.value);
+                const allChecked = boxes.length > 0 && selected.length === boxes.length;
                 updateCategoryHint();
-                // 手动切到「还款」时，若分摊人仍是默认全选，则清空让用户明确勾选收款人
-                if (r.checked && r.value === REPAY_CATEGORY) {
-                    const boxes = Array.from(document.querySelectorAll('#splitUsersCheckboxes input'));
-                    if (boxes.length && boxes.every(cb => cb.checked)) {
-                        boxes.forEach(cb => cb.checked = false);
-                    }
+                if (r.value === REPAY_CATEGORY) {
+                    // 切到还款：默认全选则清空强制选择；否则保留第一位作为收款人
+                    renderSplitOptions(allChecked ? [] : selected.slice(0, 1));
+                } else {
+                    // 切回消费大类：恢复全选，与新增费用默认一致
+                    renderSplitOptions(null);
                 }
             });
         });
@@ -879,7 +884,7 @@
         if (appData.currencies.length > 0) {
             document.getElementById('expenseCurrency').value = appData.currencies[0].code;
         }
-        renderExpenseForm();
+        renderExpenseForm(false);
         updateCategoryHint();
         editingExpenseId = null;
         document.getElementById('addExpenseBtn').textContent = '📝 记录费用';
@@ -916,6 +921,7 @@
         if(!payer) return showNotification('请选择支付人');
         if(split.length === 0) return showNotification(cat === REPAY_CATEGORY ? '请选择收款人（分摊人）' : '至少选一位分摊人');
         if(cat === REPAY_CATEGORY) {
+            if(split.length > 1) return showNotification('还款只能选择一位收款人');
             if(split.includes(payer)) return showNotification('还款的收款人不能是还款人自己，请重新选择');
         }
 
@@ -965,7 +971,7 @@
             document.getElementById('expenseTime').value = 
                 String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
             document.querySelectorAll('input[name="expenseCategory"]').forEach(r => r.checked = false);
-            document.querySelectorAll('#splitUsersCheckboxes input').forEach(cb => cb.checked = true);
+            renderSplitOptions(null);
             document.getElementById('expenseCurrency').value = 'CNY';
             updateCategoryHint();
             renderExpensesList();
@@ -985,11 +991,12 @@
         document.querySelectorAll('input[name="expenseCategory"]').forEach(r => {
             r.checked = (r.value === exp.category);
         });
+        // 还款强制单选：历史多收款人记录仅保留第一位
+        const splitList = Array.isArray(exp.splitAmong) ? exp.splitAmong : [];
+        const droppedReceivers = isRepay(exp) && splitList.length > 1;
+        renderSplitOptions(isRepay(exp) ? splitList.slice(0, 1) : splitList);
         const payerRadio = document.querySelector(`input[name="expensePayer"][value="${exp.payer}"]`);
         if (payerRadio) payerRadio.checked = true;
-        document.querySelectorAll('#splitUsersCheckboxes input').forEach(cb => {
-            cb.checked = (exp.splitAmong || []).includes(cb.value);
-        });
         document.getElementById('expenseCurrency').value = exp.currency || 'CNY';
         updateCategoryHint();
         editingExpenseId = id;
@@ -1001,7 +1008,9 @@
             form.classList.remove('hidden');
             header.classList.remove('collapsed');
         }
-        showNotification('正在编辑，修改后点击更新费用即可');
+        showNotification(droppedReceivers
+            ? '该还款记录有多个收款人，已改为单选，仅保留第一位'
+            : '正在编辑，修改后点击更新费用即可');
     }
 
     function deleteExpense(id) {
@@ -1239,11 +1248,11 @@
 
         csv += '\n---费用明细---\n';
 
-        // 序号列追加在末尾，保持原有字段位置不变，旧版导入器按固定索引仍能解析
-        csv += '日期,金额,币种,人均,大类,说明,付款人,分摊人,序号\n';
-        const seqMap = buildSeqMap();
-        // 按序号升序（旧→新，即日期升序）输出
-        const sorted = [...appData.expenses].sort((a, b) => seqMap[a.id] - seqMap[b.id]);
+        // 序号、当天序号两列追加在末尾，保持原有字段位置不变，旧版导入器按固定索引仍能解析
+        csv += '日期,金额,币种,人均,大类,说明,付款人,分摊人,序号,当天序号\n';
+        const { total: totalSeq, day: daySeq } = buildSeqInfo();
+        // 按总序号升序（旧→新，即日期升序）输出
+        const sorted = [...appData.expenses].sort((a, b) => totalSeq[a.id] - totalSeq[b.id]);
         csv += sorted.map(e => {
             const splitList = Array.isArray(e.splitAmong) ? e.splitAmong : [];
             const avg = (isRepay(e) || !splitList.length) ? '' : (e.amount / splitList.length).toFixed(2);
@@ -1256,7 +1265,8 @@
                 `"${(e.description || '').replace(/"/g,'""')}"`,
                 `"${e.payer}"`,
                 `"${splitList.join('; ')}"`,
-                seqMap[e.id]
+                totalSeq[e.id],
+                daySeq[e.id]
             ].join(',');
         }).join('\n');
 
@@ -1359,7 +1369,7 @@
 
                     let dIdx, aIdx, cIdx, catI, descI, payI, splitI, currency;
                     if (haveHeaderMap) {
-                        // 新格式：按字段名定位，序号/人均列自动忽略，列序可变
+                        // 新格式：按字段名定位，序号/当天序号/人均列自动忽略，列序可变
                         dIdx = dateIdx; aIdx = amtIdx; cIdx = curIdx;
                         catI = catIdx; descI = descIdx; payI = payerIdx; splitI = splitIdx;
                         currency = (cIdx >= 0 && vals[cIdx]) ? vals[cIdx] : 'CNY';
@@ -1473,14 +1483,21 @@
         renderExpensesTable(filtered);
     }
 
-    // 基于完整 appData.expenses，按日期时间升序生成全局序号映射 { [id]: 1..N }
-    // 显示时按日期降序，故最新日期那笔序号最大（倒序显示）
-    function buildSeqMap() {
-        const seqMap = {};
-        [...appData.expenses]
-            .sort((a, b) => new Date(a.date) - new Date(b.date))
-            .forEach((e, i) => { seqMap[e.id] = i + 1; });
-        return seqMap;
+    // 基于完整 appData.expenses，按日期时间升序一次遍历生成两个序号映射：
+    // total: 全账本 1..N；day: 同一天（date 前 10 位）内 1..当日笔数
+    // 显示时按日期降序，故最新日期那笔的两个序号都最大；同时间记录以原数组次序为准
+    function buildSeqInfo() {
+        const total = {}, daySeq = {}, dayCount = {};
+        appData.expenses
+            .map((e, i) => ({ e, i }))
+            .sort((a, b) => (new Date(a.e.date) - new Date(b.e.date)) || (a.i - b.i))
+            .forEach(({ e }, i) => {
+                total[e.id] = i + 1;
+                const d = e.date.substring(0, 10);
+                dayCount[d] = (dayCount[d] || 0) + 1;
+                daySeq[e.id] = dayCount[d];
+            });
+        return { total, day: daySeq };
     }
 
     function renderExpensesTable(exp) {
@@ -1489,8 +1506,8 @@
             el.innerHTML = '<p style="text-align:center; padding:30px; color:#7e6b8f;">✨ 暂无费用记录</p>';
             return;
         }
-        const seqMap = buildSeqMap();
-        // 显示按日期降序（最新在上）；序号取自全局映射
+        const { total: totalSeq, day: daySeq } = buildSeqInfo();
+        // 显示按日期降序（最新在上）；序号取自基于全部记录的映射，筛选不重排
         const sorted = [...exp].sort((a, b) => new Date(b.date) - new Date(a.date));
         let prevDate = null, groupIdx = 0;
         const rows = sorted.map(e => {
@@ -1507,7 +1524,7 @@
                 ? `${symbol}${(e.amount / splitList.length).toFixed(2)}`
                 : '—';
             return `<tr class="${rowClass}">
-                <td>${seqMap[e.id]}</td>
+                <td>${daySeq[e.id]}/${totalSeq[e.id]}</td>
                 <td>${e.date}</td>
                 <td class="right-cell">${symbol}${e.amount.toFixed(2)}</td>
                 <td>${e.currency || 'CNY'}</td>
@@ -1545,11 +1562,51 @@
         }
     }
 
-    function renderExpenseForm() {
-        const payerDiv = document.getElementById('expensePayerRadios');
+    // 按当前大类渲染收款人/分摊人控件：
+    // 还款=单选（默认不选中，要求明确选择收款人）；其它大类=多选（默认全选）
+    // selected 为需要选中的成员数组；null/空表示使用默认状态
+    function renderSplitOptions(selected) {
         const splitDiv = document.getElementById('splitUsersCheckboxes');
+        if (!splitDiv) return;
+        if (!appData.participants.length) {
+            splitDiv.className = 'checkbox-list';
+            splitDiv.innerHTML = '<span style="color:#a999b9;">请先添加成员</span>';
+            return;
+        }
+        const checkedCat = document.querySelector('input[name="expenseCategory"]:checked');
+        const isSettle = !!checkedCat && checkedCat.value === REPAY_CATEGORY;
+        const picked = Array.isArray(selected) ? selected : [];
+        if (isSettle) {
+            // 还款是单向转账，只能选一位收款人
+            const receiver = picked.length ? picked[0] : null;
+            splitDiv.className = 'radio-list';
+            splitDiv.innerHTML = appData.participants.map(p => `
+                <div class="radio-item">
+                    <input type="radio" id="split_${p}" name="expenseSplit" value="${p}" ${receiver === p ? 'checked' : ''}>
+                    <label for="split_${p}">${p}</label>
+                </div>
+            `).join('');
+        } else {
+            const picks = picked.length ? picked : appData.participants;
+            splitDiv.className = 'checkbox-list';
+            splitDiv.innerHTML = appData.participants.map(p => `
+                <div class="checkbox-item">
+                    <input type="checkbox" id="chk_${p}" value="${p}" ${picks.includes(p) ? 'checked' : ''}>
+                    <label for="chk_${p}">${p}</label>
+                </div>
+            `).join('');
+        }
+    }
+
+    function renderExpenseForm(preserveSplitSelection) {
+        const payerDiv = document.getElementById('expensePayerRadios');
         const curSelect = document.getElementById('expenseCurrency');
-        
+
+        // 重建前保留已选成员，避免 renderAll()（改名、导入数据等）重置当前选择
+        const prevSelected = preserveSplitSelection === false
+            ? null
+            : Array.from(document.querySelectorAll('#splitUsersCheckboxes input:checked')).map(el => el.value);
+
         curSelect.innerHTML = '';
         appData.currencies.forEach(cur => {
             const option = document.createElement('option');
@@ -1569,15 +1626,10 @@
                     <label for="payer_${p}">${p}</label>
                 </div>
             `).join('');
-            splitDiv.innerHTML = appData.participants.map(p => `
-                <div class="checkbox-item">
-                    <input type="checkbox" id="chk_${p}" value="${p}" checked>
-                    <label for="chk_${p}">${p}</label>
-                </div>
-            `).join('');
+            renderSplitOptions(prevSelected);
         } else {
             payerDiv.innerHTML = '<span style="color:#a999b9;">请先添加成员</span>';
-            splitDiv.innerHTML = '<span style="color:#a999b9;">请先添加成员</span>';
+            renderSplitOptions(null);
         }
     }
 
@@ -1602,11 +1654,10 @@
                 document.querySelectorAll('input[name="expenseCategory"]').forEach(r => {
                     r.checked = (r.value === exp.category);
                 });
+                const splitList = Array.isArray(exp.splitAmong) ? exp.splitAmong : [];
+                renderSplitOptions(isRepay(exp) ? splitList.slice(0, 1) : splitList);
                 const payerRadio = document.querySelector(`input[name="expensePayer"][value="${exp.payer}"]`);
                 if (payerRadio) payerRadio.checked = true;
-                document.querySelectorAll('#splitUsersCheckboxes input').forEach(cb => {
-                    cb.checked = (exp.splitAmong || []).includes(cb.value);
-                });
                 document.getElementById('expenseCurrency').value = exp.currency || 'CNY';
             }
         }
