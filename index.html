@@ -1105,11 +1105,11 @@
                 status = '已平 ¥0.00';
             }
             return `<tr><td>${p}</td>
-                <td class="right-cell">¥${paid.toFixed(2)}</td>
                 <td class="right-cell">¥${consumed.toFixed(2)}</td>
-                <td class="right-cell ${outAmt > 0 ? 'amount-transfer' : 'amount-zero'}">${outAmt > 0 ? '¥' + outAmt.toFixed(2) : '—'}</td>
+                <td class="right-cell">¥${paid.toFixed(2)}</td>
+                <td class="right-cell ${cls}">${status}</td>
                 <td class="right-cell ${inAmt > 0 ? 'amount-transfer' : 'amount-zero'}">${inAmt > 0 ? '¥' + inAmt.toFixed(2) : '—'}</td>
-                <td class="right-cell ${cls}">${status}</td></tr>`;
+                <td class="right-cell ${outAmt > 0 ? 'amount-transfer' : 'amount-zero'}">${outAmt > 0 ? '¥' + outAmt.toFixed(2) : '—'}</td></tr>`;
         }).join('');
 
         const catStats = computeCatStats();
@@ -1138,7 +1138,7 @@
         document.getElementById('balancesResult').innerHTML = `
             <h3 style="margin:20px 0 6px;">📊 个人收支总览（人民币）</h3>
             <div class="overview-note">💡 垫付、消费只统计真实消费；转出 = 你转给他人的还款，转入 = 他人转给你的还款；应结 =（垫付 + 转出）−（消费 + 转入）</div>
-            <table><thead><tr><th>姓名</th><th>垫付</th><th>消费</th><th>转出</th><th>转入</th><th>应结</th></tr></thead><tbody>${rows}</tbody></table>
+            <table><thead><tr><th>姓名</th><th>消费</th><th>垫付</th><th>应结</th><th>转入</th><th>转出</th></tr></thead><tbody>${rows}</tbody></table>
             <h3 style="margin:30px 0 6px;">📂 个人消费分类（人民币）</h3>
             <div class="overview-note">💡 中途还款不计入消费分类统计</div>
             <table><thead><tr><th>姓名</th><th>餐饮</th><th>交通</th><th>门票</th><th>住宿</th><th>其他</th><th>合计</th></tr></thead><tbody>${catRows}${summaryRow}</tbody></table>
@@ -1173,7 +1173,7 @@
 
         // 第一部分：个人收支总览
         csv += '===== 个人收支总览（人民币） =====\r\n';
-        csv += '姓名,垫付(元),消费(元),转出(元),转入(元),应结(元),状态\r\n';
+        csv += '姓名,消费(元),垫付(元),应结(元),转入(元),转出(元),状态\r\n';
         appData.participants.forEach(p => {
             const s = stats[p];
             const paid = s.paidExpense / 100;
@@ -1186,7 +1186,7 @@
             else if (net < -0.01) status = `应付 −¥${Math.abs(net).toFixed(2)}`;
             else status = '已平 ¥0.00';
 
-            csv += `${p},${paid.toFixed(2)},${consumed.toFixed(2)},${outAmt.toFixed(2)},${inAmt.toFixed(2)},${net.toFixed(2)},${status}\r\n`;
+            csv += `${p},${consumed.toFixed(2)},${paid.toFixed(2)},${net.toFixed(2)},${inAmt.toFixed(2)},${outAmt.toFixed(2)},${status}\r\n`;
         });
 
         csv += '\r\n'; // 空行分隔
@@ -1539,7 +1539,7 @@
                 </td>
             </tr>`;
         }).join('');
-        el.innerHTML = `<table><thead><tr><th>序号</th><th>日期</th><th>金额</th><th>币种</th><th>大类</th><th>说明</th><th>付款人</th><th>分摊人</th><th>人均</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+        el.innerHTML = `<table><thead><tr><th>序号<br>日/总</th><th>日期</th><th>金额</th><th>币种</th><th>大类</th><th>说明</th><th>付款人</th><th>分摊人</th><th>人均</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
     }
 
     function renderExpensesList() {
