@@ -700,8 +700,10 @@
         <div class="form-group">
             <label>📊 数据管理 （导入、导出为费用明细和汇率）</label>
             <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
-                <label for="importFile" class="action-link" style="cursor:pointer;">📤 导入CSV</label>
-                <input type="file" id="importFile" accept=".csv" onchange="handleFileImport(event)" style="display:none;">
+                <label for="importFileAppend" class="action-link" style="cursor:pointer;">📤 导入CSV（新增）</label>
+                <input type="file" id="importFileAppend" accept=".csv" onchange="handleFileImport(event, 'append')" style="display:none;">
+                <label for="importFileOverwrite" class="action-link delete-link" style="cursor:pointer;">🔄 导入CSV（覆盖整本账本）</label>
+                <input type="file" id="importFileOverwrite" accept=".csv" onchange="handleFileImport(event, 'overwrite')" style="display:none;">
                 <span class="action-link" onclick="exportToCSV()">📥 导出Excel</span>
                 <span class="action-link delete-link" onclick="resetAppDataWithExport()">⚠️ 重置</span>
             </div>
@@ -1234,8 +1236,12 @@
     }
 
 
-    function exportToCSV() {
-        if( !appData.expenses.length) return showNotification('无数据导出');
+    // isBackup=true 时用于导入前强制备份：文件名带时间戳，且不提示“无数据导出”
+    function exportToCSV(isBackup = false) {
+        if (!appData.expenses.length) {
+            if (!isBackup) showNotification('无数据导出');
+            return false;
+        }
 
         let csv = '---账本名称---\n';
         csv += `"${(appData.ledgerName || '未命名').replace(/"/g, '""')}"\n\n`;
@@ -1273,12 +1279,25 @@
         const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `${appData.ledgerName}_明细.csv`;
+        if (isBackup) {
+            const now = new Date();
+            const ts = now.getFullYear() +
+                String(now.getMonth() + 1).padStart(2, '0') +
+                String(now.getDate()).padStart(2, '0') + '_' +
+                String(now.getHours()).padStart(2, '0') +
+                String(now.getMinutes()).padStart(2, '0') +
+                String(now.getSeconds()).padStart(2, '0');
+            a.download = `${appData.ledgerName}_备份_${ts}.csv`;
+        } else {
+            a.download = `${appData.ledgerName}_明细.csv`;
+        }
         a.click();
-        showNotification('导出成功（含账本名称和币种配置）');
-    }   
+        showNotification(isBackup ? '已自动备份当前账本' : '导出成功（含账本名称和币种配置）');
+        return true;
+    }
 
-    function handleFileImport(event) {
+    // mode: 'append' 追加导入（默认）| 'overwrite' 覆盖整本账本
+    function handleFileImport(event, mode = 'append') {
         const file = event.target.files[0];
         if (!file) return;
         const reader = new FileReader();
@@ -1343,22 +1362,6 @@
                 const haveHeaderMap = dateIdx >= 0 && amtIdx >= 0 && catIdx >= 0 && descIdx >= 0 && payerIdx >= 0 && splitIdx >= 0;
                 if (!haveHeaderMap) hasCurrency = headerFields.includes('币种');
 
-                if (importedLedgerName) {
-                    if (appData.ledgerName === '未命名' || appData.ledgerName === '') {
-                        appData.ledgerName = importedLedgerName;
-                    } else if (appData.ledgerName !== importedLedgerName) {
-                        if (confirm(`导入的账本名称为“${importedLedgerName}”，当前为“${appData.ledgerName}”，是否覆盖？`)) {
-                            appData.ledgerName = importedLedgerName;
-                        }
-                    }
-                }
-
-                importedCurrencies.forEach(ic => {
-                    if (!appData.currencies.some(c => c.code === ic.code)) {
-                        appData.currencies.push(ic);
-                    }
-                });
-
                 const valid = [];
                 const newM = new Set();
 
@@ -1408,21 +1411,60 @@
                 }
 
                 if (!valid.length) { showNotification('无有效费用数据'); return; }
+
+                const isOverwrite = mode === 'overwrite';
                 const toAdd = [...newM].filter(m => !appData.participants.includes(m));
-                const msg = `导入${valid.length}条费用` +
-                    (importedCurrencies.length ? `，恢复${importedCurrencies.length}种币种` : '') +
-                    (importedLedgerName ? `，账本名称“${importedLedgerName}”` : '') +
-                    (toAdd.length ? `，新增成员:${toAdd.join(',')}` : '') +
-                    `\n⚠️ 导入操作为新增数据，不会覆盖原有记录。\n确认继续？`;
+                // 计算导入后的账本名称：覆盖模式以文件为准（缺失则“未命名”）；新增模式在原名称为空/未命名或不同名时采用文件名称
+                let nameWillSet = appData.ledgerName;
+                if (isOverwrite) {
+                    nameWillSet = importedLedgerName || '未命名';
+                } else if (importedLedgerName && (appData.ledgerName === '未命名' || appData.ledgerName === '' || appData.ledgerName !== importedLedgerName)) {
+                    nameWillSet = importedLedgerName;
+                }
+
+                const backupNote = appData.expenses.length
+                    ? '导入前会自动导出当前账本作为备份。'
+                    : '当前账本没有费用记录，无需备份。';
+                const msg = isOverwrite
+                    ? `【覆盖导入】将清空当前账本（${appData.expenses.length} 条费用、${appData.participants.length} 位成员、${appData.currencies.length} 种币种），\n` +
+                      `并用文件中的 ${valid.length} 条费用重建，账本名称设为“${nameWillSet}”。\n${backupNote}\n此操作不可撤销，确认继续？`
+                    : `【新增导入】追加 ${valid.length} 条费用` +
+                      (importedCurrencies.length ? `，补充 ${importedCurrencies.length} 种币种` : '') +
+                      (toAdd.length ? `，新增成员：${toAdd.join('、')}` : '') +
+                      (nameWillSet !== appData.ledgerName ? `，账本名称改为“${nameWillSet}”` : '') +
+                      `。\n${backupNote}\n新增模式不会删除原有记录，确认继续？`;
                 if (!confirm(msg)) return;
 
-                toAdd.forEach(m => appData.participants.push(m));
-                appData.expenses.push(...valid);
+                // 强制备份：Blob 在调用时已按旧数据生成，后续修改不会影响备份内容
+                exportToCSV(true);
+
+                if (isOverwrite) {
+                    // 覆盖模式：清空后用文件内容重建整本账本
+                    appData.ledgerName = nameWillSet;
+                    const curMap = new Map();
+                    importedCurrencies.forEach(c => { if (!curMap.has(c.code)) curMap.set(c.code, c); });
+                    if (!curMap.has('CNY')) curMap.set('CNY', { code: 'CNY', name: '人民币', symbol: '¥', rate: 1 });
+                    appData.currencies = [...curMap.values()];
+                    appData.participants = [...newM];
+                    appData.expenses = valid;
+                } else {
+                    toAdd.forEach(m => appData.participants.push(m));
+                    importedCurrencies.forEach(ic => {
+                        if (!appData.currencies.some(c => c.code === ic.code)) appData.currencies.push(ic);
+                    });
+                    appData.ledgerName = nameWillSet;
+                    appData.expenses.push(...valid);
+                }
+
+                resetExpenseForm();
                 saveData();
                 updateLedgerNameDisplay();
                 renderAll();
                 updateHintBannerVisibility();
-                showNotification(`导入成功：${valid.length}条费用${importedCurrencies.length ? '，' + importedCurrencies.length + '种币种已恢复' : ''}${importedLedgerName ? '，账本名称已恢复' : ''}`);
+                if (!document.getElementById('balancesResult').classList.contains('hidden')) calculateBalances();
+                showNotification(isOverwrite
+                    ? `覆盖导入成功：${valid.length} 条费用、${appData.participants.length} 位成员，原账本已备份`
+                    : `新增导入成功：${valid.length} 条费用${toAdd.length ? `、${toAdd.length} 位成员` : ''}，原账本已备份`);
 
             } catch (err) {
                 showNotification('导入出错');
