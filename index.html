@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>旅行记账本 v20261119.1520</title>
+    <title>旅行记账本 v20261119.1740</title>
     <style>
         /* ===== 基础配色 ===== */
         :root {
@@ -365,9 +365,12 @@
         .right-cell { text-align: center; }
         .center-cell { text-align: center; }
         tr:last-child td { border-bottom: none; }
-        /* 按日期分组的隔行底色：同一天连续同色，跨天切换浅蓝↔白 */
+        /* 按日期分组的隔行底色：同一天连续同色，跨天按 5 色循环（淡雅浅色） */
         tr.row-blue td { background-color: #eef4ff; }
         tr.row-white td { background-color: #ffffff; }
+        tr.row-mint td { background-color: #eef8f1; }
+        tr.row-cream td { background-color: #fffaf0; }
+        tr.row-peach td { background-color: #fdf2ec; }
         /* 已核对标记：日常模式显示在序号旁 */
         .recon-mark {
             color: #16a34a;
@@ -1675,13 +1678,15 @@
         // 显示按日期降序（最新在上）；序号取自基于全部记录的映射，筛选不重排
         const sorted = [...exp].sort((a, b) => new Date(b.date) - new Date(a.date));
         const showRecon = reconcileMode;
-        let prevDate = null, groupIdx = 0;
+        const dayRowClasses = ['row-white', 'row-cream', 'row-blue', 'row-peach', 'row-mint'];
+        // 颜色按全账本日期升序分配（最早日期为白），筛选时同一天的颜色不会漂移
+        const dayOrder = [...new Set(appData.expenses.map(e => e.date.substring(0, 10)))].sort();
+        const dayIndex = new Map(dayOrder.map((d, i) => [d, i]));
         const rows = sorted.map(e => {
             const day = e.date.substring(0, 10);
-            if (day !== prevDate) { groupIdx++; prevDate = day; }
             const settle = isRepay(e);
-            // 还款行整行浅紫高亮，优先于按日期分组的蓝白隔行底色
-            const rowClass = settle ? 'row-settlement' : ((groupIdx % 2 === 1) ? 'row-blue' : 'row-white');
+            // 还款行整行浅紫高亮，优先于按日期分组的 5 色底色
+            const rowClass = settle ? 'row-settlement' : dayRowClasses[dayIndex.get(day) % dayRowClasses.length];
             const symbol = getCurrencySymbol(e.currency || 'CNY');
             const splitList = Array.isArray(e.splitAmong) ? e.splitAmong : [];
             const catCell = settle ? '<span class="cat-badge-settle">还款</span>' : e.category;
