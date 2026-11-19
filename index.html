@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>旅行记账本 v20261119.1410</title>
+    <title>旅行记账本 v20261119.1520</title>
     <style>
         /* ===== 基础配色 ===== */
         :root {
@@ -239,6 +239,79 @@
             flex-wrap: wrap;
             gap: 4px 6px;
             margin-top: 6px;
+        }
+
+        /* 筛选面板：分摊人下拉多选 */
+        .filter-multi {
+            position: relative;
+        }
+        .filter-multi-toggle {
+            width: 100%;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            padding: 8px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: #ffffff;
+            color: inherit;
+            font-family: inherit;
+            font-size: 0.95em;
+            text-align: left;
+            cursor: pointer;
+        }
+        .filter-multi-toggle:focus {
+            outline: 2px solid rgba(59, 130, 246, 0.35);
+            outline-offset: 1px;
+        }
+        .filter-multi-caret {
+            color: #7e6b8f;
+            font-size: 0.85em;
+        }
+        .filter-multi-panel {
+            position: absolute;
+            z-index: 50;
+            left: 0;
+            right: 0;
+            top: calc(100% + 4px);
+            max-height: 240px;
+            overflow-y: auto;
+            padding: 8px;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+        .filter-check-list {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .filter-check-list label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 40px;
+            padding: 7px 6px;
+            border-radius: 6px;
+            font-size: 0.95em;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+        .filter-check-list label:active {
+            background: #eef4ff;
+        }
+        .filter-check-list input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+        .filter-check-list .empty-tip {
+            color: #a999b9;
+            font-size: 0.9em;
+            padding: 6px;
         }
        
         .radio-item,
@@ -639,7 +712,15 @@
                 <div><label>结束</label><input type="date" id="filterDateTo" oninput="applyFilters()"></div>
                 <div><label>大类</label><select id="filterCategory" onchange="applyFilters()"><option value="">全部</option><option>餐饮</option><option>交通</option><option>门票</option><option>住宿</option><option>其他</option><option>还款</option></select></div>
                 <div><label>付款人</label><select id="filterPayer" onchange="applyFilters()"><option value="">全部</option></select></div>
-                <div><label>分摊人</label><select id="filterSplitter" onchange="applyFilters()"><option value="">全部</option></select></div>
+                <div class="filter-multi">
+                    <label>分摊人</label>
+                    <button type="button" id="filterSplitterToggle" class="filter-multi-toggle" onclick="toggleSplitterDropdown(event)">
+                        <span id="filterSplitterText">全部</span><span class="filter-multi-caret">▾</span>
+                    </button>
+                    <div id="filterSplitterPanel" class="filter-multi-panel hidden">
+                        <div id="filterSplitter" class="filter-check-list"></div>
+                    </div>
+                </div>
                 <div><label>币种</label><select id="filterCurrency" onchange="applyFilters()"><option value="">全部</option></select></div>
             </div>
             <button class="btn btn-sm" onclick="clearFilters()">🧹 清空筛选</button>
@@ -1509,23 +1590,43 @@
     }
 
     function clearFilters() {
-        ['filterDateFrom','filterDateTo','filterCategory','filterPayer','filterSplitter','filterCurrency'].forEach(id => document.getElementById(id).value = '');
+        ['filterDateFrom','filterDateTo','filterCategory','filterPayer','filterCurrency'].forEach(id => document.getElementById(id).value = '');
+        document.querySelectorAll('#filterSplitter input').forEach(cb => cb.checked = false);
+        updateSplitterSummary();
         applyFilters();
+    }
+
+    function toggleSplitterDropdown(e) {
+        if (e) e.stopPropagation();
+        const panel = document.getElementById('filterSplitterPanel');
+        if (panel) panel.classList.toggle('hidden');
+    }
+
+    function updateSplitterSummary() {
+        const text = document.getElementById('filterSplitterText');
+        if (!text) return;
+        const picked = Array.from(document.querySelectorAll('#filterSplitter input:checked')).map(cb => cb.value);
+        text.textContent = !picked.length
+            ? '全部'
+            : (picked.length <= 2 ? picked.join('、') : `已选 ${picked.length} 人`);
     }
 
     function updateFilterOptions() {
         const pSel = document.getElementById('filterPayer');
         const sSel = document.getElementById('filterSplitter');
         const cSel = document.getElementById('filterCurrency');
-        pSel.innerHTML = sSel.innerHTML = '<option value="">全部</option>';
+        pSel.innerHTML = '<option value="">全部</option>';
         cSel.innerHTML = '<option value="">全部</option>';
         appData.participants.forEach(p => {
             pSel.innerHTML += `<option>${p}</option>`;
-            sSel.innerHTML += `<option>${p}</option>`;
         });
+        sSel.innerHTML = appData.participants.length
+            ? appData.participants.map(p => `<label><input type="checkbox" value="${p}" onchange="applyFilters(); updateSplitterSummary();"> ${p}</label>`).join('')
+            : '<span class="empty-tip">暂无成员</span>';
         appData.currencies.forEach(cur => {
             cSel.innerHTML += `<option value="${cur.code}">${cur.code} ${cur.symbol}</option>`;
         });
+        updateSplitterSummary();
     }
 
     function applyFilters() {
@@ -1534,13 +1635,13 @@
         const to = document.getElementById('filterDateTo').value;
         const cat = document.getElementById('filterCategory').value;
         const payer = document.getElementById('filterPayer').value;
-        const splitter = document.getElementById('filterSplitter').value;
+        const splitters = Array.from(document.querySelectorAll('#filterSplitter input:checked')).map(el => el.value);
         const currency = document.getElementById('filterCurrency').value;
         if(from) filtered = filtered.filter(e => e.date.substring(0,10) >= from);
         if(to) filtered = filtered.filter(e => e.date.substring(0,10) <= to);
         if(cat) filtered = filtered.filter(e => e.category === cat);
         if(payer) filtered = filtered.filter(e => e.payer === payer);
-        if(splitter) filtered = filtered.filter(e => (e.splitAmong || []).includes(splitter));
+        if(splitters.length) filtered = filtered.filter(e => (e.splitAmong || []).some(p => splitters.includes(p)));
         if(currency) filtered = filtered.filter(e => (e.currency || 'CNY') === currency);
         renderExpensesTable(filtered);
     }
@@ -1970,6 +2071,14 @@
     }
 
     window.onload = loadData;
+
+    // 点击分摊人下拉以外的区域时收起浮层
+    document.addEventListener('click', (e) => {
+        const panel = document.getElementById('filterSplitterPanel');
+        if (!panel || panel.classList.contains('hidden')) return;
+        if (e.target.closest && e.target.closest('.filter-multi')) return;
+        panel.classList.add('hidden');
+    });
 
     let calcExpr = '';
 
