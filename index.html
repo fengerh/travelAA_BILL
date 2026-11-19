@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>旅行记账本 v20261109.1350</title>
+    <title>旅行记账本 v20261119.1410</title>
     <style>
         /* ===== 基础配色 ===== */
         :root {
@@ -295,6 +295,12 @@
         /* 按日期分组的隔行底色：同一天连续同色，跨天切换浅蓝↔白 */
         tr.row-blue td { background-color: #eef4ff; }
         tr.row-white td { background-color: #ffffff; }
+        /* 已核对标记：日常模式显示在序号旁 */
+        .recon-mark {
+            color: #16a34a;
+            font-weight: 700;
+            margin-left: 4px;
+        }
 
         /* ===== 还款记录行：整行浅紫高亮（优先级高于日期分组底色） ===== */
         tr.row-settlement td {
@@ -618,7 +624,13 @@
 <div class="card card-expenses-list" style="background-color: #dde9ff;">
     <div class="flex-between">
         <h2 id="expensesHeader" class="collapsible-header collapsed" onclick="toggleExpensesPanel()">📋 费用明细</h2>
-        <button class="btn btn-sm" onclick="event.stopPropagation(); handleFilterClick()">🔍 筛选</button>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: flex-end;">
+            <span id="reconcileProgress" class="hidden" style="font-weight: 600; color: #166534; white-space: nowrap;">已核对 0/0</span>
+            <button class="btn btn-sm hidden" id="reconcileAllBtn" onclick="event.stopPropagation(); setReconciledForVisible(true)">全部勾选</button>
+            <button class="btn btn-sm hidden" id="reconcileNoneBtn" style="background:#9ca3af;" onclick="event.stopPropagation(); setReconciledForVisible(false)">全部取消</button>
+            <button class="btn btn-sm" id="reconcileToggleBtn" onclick="event.stopPropagation(); toggleReconcileMode()">✅ 对账</button>
+            <button class="btn btn-sm" onclick="event.stopPropagation(); handleFilterClick()">🔍 筛选</button>
+        </div>
     </div>
     <div id="expensesContentWrapper" class="hidden">
         <div id="filterPanel" class="hidden" style="margin: 12px 0 16px; padding: 14px; background: #dde9ff; border-radius: 8px; border: 1px solid #dde9ff;">
@@ -736,6 +748,9 @@
         ]
     };
     let editingExpenseId = null;
+    // 对账模式：开关为临时界面状态，核对结果存于每条费用的 reconciled 字段
+    let reconcileMode = false;
+    let currentFilteredExpenses = [];
 
     function getCurrencyRate(code) {
         const cur = appData.currencies.find(c => c.code === code);
@@ -942,7 +957,8 @@
                 category: cat,
                 splitAmong: split,
                 date: dateStr,
-                currency: currency
+                currency: currency,
+                reconciled: false
             };
             if (oldCurrency !== currency) {
                 if (!confirm('币种已变更，请注意核对金额是否正确。确定更新吗？')) {
@@ -963,7 +979,8 @@
                 category: cat,
                 splitAmong: split,
                 date: dateStr,
-                currency: currency
+                currency: currency,
+                reconciled: false
             });
             saveData();
             document.getElementById('expenseAmount').value = '';
@@ -1255,7 +1272,7 @@
         csv += '\n---费用明细---\n';
 
         // 序号、当天序号两列追加在末尾，保持原有字段位置不变，旧版导入器按固定索引仍能解析
-        csv += '日期,金额,币种,人均,大类,说明,付款人,分摊人,序号,当天序号\n';
+        csv += '日期,金额,币种,人均,大类,说明,付款人,分摊人,序号,当天序号,已核对\n';
         const { total: totalSeq, day: daySeq } = buildSeqInfo();
         // 按总序号升序（旧→新，即日期升序）输出
         const sorted = [...appData.expenses].sort((a, b) => totalSeq[a.id] - totalSeq[b.id]);
@@ -1272,7 +1289,8 @@
                 `"${e.payer}"`,
                 `"${splitList.join('; ')}"`,
                 totalSeq[e.id],
-                daySeq[e.id]
+                daySeq[e.id],
+                e.reconciled ? '是' : ''
             ].join(',');
         }).join('\n');
 
@@ -1359,6 +1377,7 @@
                 const descIdx = getFieldIdx('说明');
                 const payerIdx = getFieldIdx('付款人');
                 const splitIdx = getFieldIdx('分摊人');
+                const reconIdx = getFieldIdx('已核对');
                 const haveHeaderMap = dateIdx >= 0 && amtIdx >= 0 && catIdx >= 0 && descIdx >= 0 && payerIdx >= 0 && splitIdx >= 0;
                 if (!haveHeaderMap) hasCurrency = headerFields.includes('币种');
 
@@ -1372,7 +1391,7 @@
 
                     let dIdx, aIdx, cIdx, catI, descI, payI, splitI, currency;
                     if (haveHeaderMap) {
-                        // 新格式：按字段名定位，序号/当天序号/人均列自动忽略，列序可变
+                        // 新格式：按字段名定位，序号/当天序号/人均列自动忽略，已核对列单独解析，列序可变
                         dIdx = dateIdx; aIdx = amtIdx; cIdx = curIdx;
                         catI = catIdx; descI = descIdx; payI = payerIdx; splitI = splitIdx;
                         currency = (cIdx >= 0 && vals[cIdx]) ? vals[cIdx] : 'CNY';
@@ -1406,7 +1425,8 @@
                         description: vals[descI],
                         payer: vals[payI],
                         splitAmong: split,
-                        currency: currency
+                        currency: currency,
+                        reconciled: reconIdx >= 0 && ['是', '✓', 'Y', 'y', 'yes', 'true', '1'].includes(vals[reconIdx])
                     });
                 }
 
@@ -1544,13 +1564,16 @@
 
     function renderExpensesTable(exp) {
         const el = document.getElementById('expensesList');
+        currentFilteredExpenses = exp.slice();
         if(!exp.length) {
             el.innerHTML = '<p style="text-align:center; padding:30px; color:#7e6b8f;">✨ 暂无费用记录</p>';
+            updateReconcileProgress();
             return;
         }
         const { total: totalSeq, day: daySeq } = buildSeqInfo();
         // 显示按日期降序（最新在上）；序号取自基于全部记录的映射，筛选不重排
         const sorted = [...exp].sort((a, b) => new Date(b.date) - new Date(a.date));
+        const showRecon = reconcileMode;
         let prevDate = null, groupIdx = 0;
         const rows = sorted.map(e => {
             const day = e.date.substring(0, 10);
@@ -1565,8 +1588,12 @@
             const avgCell = (!settle && splitList.length)
                 ? `${symbol}${(e.amount / splitList.length).toFixed(2)}`
                 : '—';
+            // 对账模式：首列（原序号列）替换为核对勾选框；日常模式显示序号并在已核对时保留小勾
+            const firstCell = showRecon
+                ? `<td class="center-cell"><input type="checkbox" ${e.reconciled ? 'checked' : ''} onchange="toggleReconciled(${e.id}, this)"></td>`
+                : `<td>${daySeq[e.id]}/${totalSeq[e.id]}${e.reconciled ? ' <span class="recon-mark" title="已核对">✓</span>' : ''}</td>`;
             return `<tr class="${rowClass}">
-                <td>${daySeq[e.id]}/${totalSeq[e.id]}</td>
+                ${firstCell}
                 <td>${e.date}</td>
                 <td class="right-cell">${symbol}${e.amount.toFixed(2)}</td>
                 <td>${e.currency || 'CNY'}</td>
@@ -1581,7 +1608,68 @@
                 </td>
             </tr>`;
         }).join('');
-        el.innerHTML = `<table><thead><tr><th>序号<br>日/总</th><th>日期</th><th>金额</th><th>币种</th><th>大类</th><th>说明</th><th>付款人</th><th>分摊人</th><th>人均</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+        const firstHeader = showRecon ? '<th>核对</th>' : '<th>序号<br>日/总</th>';
+        el.innerHTML = `<table><thead><tr>${firstHeader}<th>日期</th><th>金额</th><th>币种</th><th>大类</th><th>说明</th><th>付款人</th><th>分摊人</th><th>人均</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+        updateReconcileProgress();
+    }
+
+    // ===== 对账模式 =====
+    function toggleReconcileMode() {
+        reconcileMode = !reconcileMode;
+        const btn = document.getElementById('reconcileToggleBtn');
+        ['reconcileProgress', 'reconcileAllBtn', 'reconcileNoneBtn'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.toggle('hidden', !reconcileMode);
+        });
+        if (btn) {
+            btn.textContent = reconcileMode ? '✅ 退出对账' : '✅ 对账';
+            btn.style.background = reconcileMode ? '#16a34a' : '';
+            btn.style.color = reconcileMode ? '#ffffff' : '';
+        }
+        if (reconcileMode) {
+            document.getElementById('expensesContentWrapper').classList.remove('hidden');
+            document.getElementById('expensesHeader').classList.remove('collapsed');
+        }
+        applyFilters();
+        if (reconcileMode) showNotification('已进入对账模式，勾选记录表示已核对');
+    }
+
+    function toggleReconciled(id, checkboxEl) {
+        const exp = appData.expenses.find(e => e.id === id);
+        if (!exp) return;
+        exp.reconciled = !!checkboxEl.checked;
+        saveData();
+        updateReconcileProgress();
+    }
+
+    function setReconciledForVisible(checked) {
+        if (!currentFilteredExpenses.length) return showNotification('当前没有可操作的记录');
+        const total = currentFilteredExpenses.length;
+        const targetCount = checked
+            ? currentFilteredExpenses.filter(e => !e.reconciled).length
+            : currentFilteredExpenses.filter(e => e.reconciled).length;
+        if (!targetCount) {
+            return showNotification(checked
+                ? `当前筛选的 ${total} 条记录都已核对`
+                : `当前筛选的 ${total} 条记录都未核对`);
+        }
+        const msg = checked
+            ? `确认将当前筛选的 ${targetCount}/${total} 条未核对记录标记为已核对？`
+            : `确认取消当前筛选的 ${targetCount}/${total} 条记录的核对标记？`;
+        if (!confirm(msg)) return;
+        const ids = new Set(currentFilteredExpenses.map(e => e.id));
+        appData.expenses.forEach(e => { if (ids.has(e.id)) e.reconciled = !!checked; });
+        saveData();
+        applyFilters();
+        showNotification(`${checked ? '已勾选' : '已取消'} ${targetCount} 条记录（当前筛选共 ${total} 条）`);
+    }
+
+    function updateReconcileProgress() {
+        const el = document.getElementById('reconcileProgress');
+        if (!el) return;
+        const total = currentFilteredExpenses.length;
+        const done = currentFilteredExpenses.filter(e => e.reconciled).length;
+        el.textContent = `已核对 ${done}/${total}`;
     }
 
     function renderExpensesList() {
